@@ -1,0 +1,90 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "parcelId": "UK-DDN-001",
+        "surveyNumber": "123/456",
+        "locality": "Rajpur Road",
+        "landUse": "Residential",
+        "category": "Private",
+        "area": 1200,
+        "riskLevel": "Low",
+        "riskFactors": "Standard residential zone"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[78.02, 30.32], [78.025, 30.32], [78.025, 30.325], [78.02, 30.325], [78.02, 30.32]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcelId": "UK-DDN-002",
+        "surveyNumber": "234/567",
+        "locality": "Clock Tower",
+        "landUse": "Commercial",
+        "category": "Private",
+        "area": 800,
+        "riskLevel": "Medium",
+        "riskFactors": "High traffic density"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[78.03, 30.31], [78.035, 30.31], [78.035, 30.315], [78.03, 30.315], [78.03, 30.31]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcelId": "UK-DDN-003",
+        "surveyNumber": "345/678",
+        "locality": "Saharanpur Road",
+        "landUse": "Agricultural",
+        "category": "Private",
+        "area": 5000,
+        "riskLevel": "Low",
+        "riskFactors": "Fertile agricultural land"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[78.01, 30.33], [78.018, 30.33], [78.018, 30.338], [78.01, 30.338], [78.01, 30.33]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcelId": "UK-DDN-004",
+        "surveyNumber": "456/789",
+        "locality": "Clement Town",
+        "landUse": "Residential",
+        "category": "Government",
+        "area": 2000,
+        "riskLevel": "High",
+        "riskFactors": "Near river, flood prone"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[78.04, 30.30], [78.048, 30.30], [78.048, 30.308], [78.04, 30.308], [78.04, 30.30]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcelId": "UK-DDN-005",
+        "surveyNumber": "567/890",
+        "locality": "Prem Nagar",
+        "landUse": "Residential",
+        "category": "Private",
+        "area": 1500,
+        "riskLevel": "Medium",
+        "riskFactors": "Slope instability"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[78.00, 30.31], [78.007, 30.31], [78.007, 30.317], [78.00, 30.317], [78.00, 30.31]]]
+      }
+    }
+  ]
+}

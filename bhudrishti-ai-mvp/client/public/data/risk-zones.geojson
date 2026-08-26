@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Flood Zone 1", "risk": "High" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[78.035, 30.295], [78.055, 30.295], [78.055, 30.31], [78.035, 30.31], [78.035, 30.295]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Landslide Risk Area", "risk": "Medium" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.98, 30.335], [78.01, 30.335], [78.01, 30.355], [77.98, 30.355], [77.98, 30.335]]]
+      }
+    }
+  ]
+}

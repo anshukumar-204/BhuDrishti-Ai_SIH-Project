@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Rajaji National Park Area" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[78.05, 30.33], [78.10, 30.33], [78.10, 30.36], [78.05, 30.36], [78.05, 30.33]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Reserved Forest" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.95, 30.34], [77.99, 30.34], [77.99, 30.37], [77.95, 30.37], [77.95, 30.34]]]
+      }
+    }
+  ]
+}

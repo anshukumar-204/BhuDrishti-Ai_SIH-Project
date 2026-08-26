@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS land_parcels (id SERIAL PRIMARY KEY, parcel_id TEXT UNIQUE NOT NULL, survey_number TEXT, locality TEXT, land_use TEXT, category TEXT, area_sq_m NUMERIC, risk_level TEXT, geometry GEOMETRY(Polygon, 4326), created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());

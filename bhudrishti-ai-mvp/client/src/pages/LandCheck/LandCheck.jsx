@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLand } from "../../context/LandContext";
+import { checkLand } from "../../api/landCheckApi";
 
 const fallback = {
   parcelId: "UK-DDN-001",
@@ -25,9 +26,25 @@ export default function LandCheck() {
   const [query, setQuery] = useState(selectedParcel?.parcelId || "UK-DDN-001");
   const [report, setReport] = useState(selectedParcel || fallback);
   const [searched, setSearched] = useState(false);
-  const runCheck = (event) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const runCheck = async (event) => {
     event.preventDefault();
-    setReport({ ...fallback, parcelId: query || fallback.parcelId });
+    const searchTerm = query.trim();
+    if (!searchTerm) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      const { data } = await checkLand(searchTerm);
+      setReport(data.data.parcel);
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.error ||
+          "Unable to search land data. Please try again.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
     setSearched(true);
   };
   return (
@@ -52,10 +69,18 @@ export default function LandCheck() {
                 className="w-full rounded-xl bg-white px-12 py-4 text-slate-900 outline-none"
               />
             </div>
-            <button className="rounded-xl bg-emerald-400 px-5 py-3 font-bold text-slate-950 hover:bg-emerald-300">
-              Check land
+            <button
+              disabled={isLoading}
+              className="rounded-xl bg-emerald-400 px-5 py-3 font-bold text-slate-950 hover:bg-emerald-300 disabled:opacity-60"
+            >
+              {isLoading ? "Searching..." : "Check land"}
             </button>
           </form>
+          {error && (
+            <p className="mt-3 max-w-2xl text-sm font-semibold text-red-300">
+              {error}
+            </p>
+          )}
         </div>
       </section>
       <main className="max-w-7xl mx-auto px-4 py-8">
@@ -72,7 +97,7 @@ export default function LandCheck() {
                 </p>
               </div>
               <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
-                Dataset match
+                {searched && !error ? "Dataset match" : "Ready to search"}
               </span>
             </div>
             <div className="grid sm:grid-cols-2 gap-3 mt-8">
@@ -144,7 +169,9 @@ export default function LandCheck() {
         </p>
         {searched && (
           <p className="mt-2 text-center text-xs font-semibold text-emerald-700">
-            Report refreshed for {report.parcelId}
+            {error
+              ? "No matching parcel found"
+              : `Report refreshed for ${report.parcelId}`}
           </p>
         )}
       </main>

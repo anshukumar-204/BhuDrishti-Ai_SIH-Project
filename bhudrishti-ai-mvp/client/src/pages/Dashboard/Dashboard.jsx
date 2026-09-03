@@ -1,5 +1,12 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Map, Search, Sparkles, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  FlaskConical,
+  Map,
+  Search,
+  Sparkles,
+  ShieldCheck,
+} from "lucide-react";
 export default function Dashboard() {
   const user = JSON.parse(
     localStorage.getItem("bhudrishti_user") ||
@@ -10,6 +17,12 @@ export default function Dashboard() {
     ["Run LandCheck", "Create a context report", "/land-check", Search],
     ["Generate insight", "Explain a selected area", "/ai-insights", Sparkles],
     ["Verify document", "Fingerprint a file", "/verification", ShieldCheck],
+    [
+      "Policy simulation",
+      "Model policy outcomes",
+      "/policy-simulation",
+      FlaskConical,
+    ],
   ];
   return (
     <div className="pt-16 min-h-screen bg-slate-50">
@@ -46,7 +59,7 @@ export default function Dashboard() {
           ))}
         </div>
         <h2 className="mt-10 text-xl font-black">Quick actions</h2>
-        <div className="mt-4 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mt-4 grid md:grid-cols-2 lg:grid-cols-5 gap-4">
           {actions.map(([title, desc, path, Icon]) => (
             <Link
               to={path}

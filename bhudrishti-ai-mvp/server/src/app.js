@@ -8,12 +8,25 @@ import aiRoutes from "./routes/aiRoutes.js";
 import simulationRoutes from "./routes/simulationRoutes.js";
 import verificationRoutes from "./routes/verificationRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import { requireAuth } from "./middleware/authMiddleware.js";
 
 const app = express();
 
 // Middleware
 app.use(cors({ origin: "*" }));
 app.use(express.json());
+
+// Protected API groups must be guarded before their routers are mounted.
+app.use(
+  [
+    "/api/analytics",
+    "/api/land-check",
+    "/api/ai",
+    "/api/simulation",
+    "/api/verification",
+  ],
+  requireAuth,
+);
 
 // Routes
 app.use("/api/lands", landRoutes);

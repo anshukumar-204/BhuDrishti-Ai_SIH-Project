@@ -35,19 +35,19 @@ flowchart TD
 
 The presentation identifies the following technologies and components for the CIS-GPO Automator:
 
-| Area                           | Technology or component            | Role                                                                  |
-| ------------------------------ | ---------------------------------- | --------------------------------------------------------------------- |
-| Desktop application            | Electron.js                        | Offline desktop interface for administrators                          |
-| API and orchestration          | FastAPI                            | Local service layer for uploads, RAG, and automation workflows        |
-| Local AI runtime               | Ollama                             | Runs language models without sending sensitive data to the internet   |
-| Language model                 | Mistral AI                         | Generates PowerShell scripts from retrieved CIS controls              |
-| Retrieval-augmented generation | RAG                                | Grounds model output in the uploaded CIS guidelines                   |
-| Vector search                  | FAISS                              | Indexes and searches guideline embeddings locally                     |
-| Vector database                | ChromaDB / Chroma AI               | Stores document chunks and embedding metadata                         |
-| Policy automation              | PowerShell                         | Applies and validates Windows GPO/security settings                   |
-| Policy target                  | Windows Group Policy Objects (GPO) | Enforces the generated security configuration                         |
-| Data store                     | MongoDB                            | Stores guidelines, user settings, scripts, and documentation metadata |
-| Security model                 | Air-gapped/offline execution       | Supports sensitive environments without internet access               |
+| Area | Technology or component | Role |
+| --- | --- | --- |
+| Desktop application | Electron.js | Offline desktop interface for administrators |
+| API and orchestration | FastAPI | Local service layer for uploads, RAG, and automation workflows |
+| Local AI runtime | Ollama | Runs language models without sending sensitive data to the internet |
+| Language model | Mistral AI | Generates PowerShell scripts from retrieved CIS controls |
+| Retrieval-augmented generation | RAG | Grounds model output in the uploaded CIS guidelines |
+| Vector search | FAISS | Indexes and searches guideline embeddings locally |
+| Vector database | ChromaDB / Chroma AI | Stores document chunks and embedding metadata |
+| Policy automation | PowerShell | Applies and validates Windows GPO/security settings |
+| Policy target | Windows Group Policy Objects (GPO) | Enforces the generated security configuration |
+| Data store | MongoDB | Stores guidelines, user settings, scripts, and documentation metadata |
+| Security model | Air-gapped/offline execution | Supports sensitive environments without internet access |
 
 The stack above comes from the attached presentation and represents the CIS-GPO Automator design. The current BhuDrishti MVP runtime uses the separate stack described below: React/Vite, Express, FastAPI, PostgreSQL/PostGIS schemas, and GeoJSON-based GIS data.
 
@@ -289,5 +289,12 @@ Do not commit secrets or local environment files. The current demo authenticatio
 
 - Backend responses are mock/demo data.
 - The SQL schemas are not yet connected to the Express server.
+- The AI service is a lightweight decision-support stub, not a production model.
+- Authentication is intended for the MVP and should be replaced with production identity, token storage, validation, and authorization before deployment.
+
+## Project purpose
+
+BhuDrishti AI brings land data, spatial layers, analytics, AI-assisted interpretation, verification, and policy simulation into one platform. It is intended to help teams explore evidence and evaluate decisions faster while keeping the MVP architecture easy to run and extend.
+
 - The AI service is a lightweight decision-support stub, not a production model.
 - Authentication is intended for the MVP and should be replaced with production identity, token storage, validation, and authorization before deployment.

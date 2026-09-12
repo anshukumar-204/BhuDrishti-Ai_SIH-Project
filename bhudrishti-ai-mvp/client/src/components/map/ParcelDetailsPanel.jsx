@@ -1,25 +1,61 @@
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useLand } from "../../context/LandContext";
+import { useAuth } from "../../context/AuthContext";
+import { getNearby } from "../../api/landApi";
 import {
   X,
   MapPin,
   Ruler,
   AlertTriangle,
   Building2,
-  TreePine,
   Navigation,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const nearbyItems = [
+  ["hospital", "🏥", "Hospital"],
+  ["school", "🎓", "School"],
+  ["market", "🛒", "Market"],
+  ["publicTransport", "🚌", "Public Transport"],
+  ["railway", "🚉", "Railway"],
+  ["road", "🛣️", "Main Road"],
+  ["waterBody", "💧", "Water Body"],
+  ["forest", "🌳", "Forest"],
+];
+
 export default function ParcelDetailsPanel() {
   const { selectedParcel, isPanelOpen, closePanel } = useLand();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [nearby, setNearby] = useState(null);
+  const [nearbyError, setNearbyError] = useState("");
+
+  useEffect(() => {
+    const parcelKey = selectedParcel?.id || selectedParcel?.parcelId;
+    if (!user || !parcelKey) return;
+    setNearby(null);
+    setNearbyError("");
+    getNearby(parcelKey)
+      .then(({ data }) => setNearby(data.data))
+      .catch(() =>
+        setNearbyError("Live nearby data is temporarily unavailable."),
+      );
+  }, [user, selectedParcel?.id, selectedParcel?.parcelId]);
 
   if (!selectedParcel) return null;
-
   const riskColors = {
     Low: "bg-emerald-100 text-emerald-700 border-emerald-200",
     Medium: "bg-amber-100 text-amber-700 border-amber-200",
     High: "bg-red-100 text-red-700 border-red-200",
   };
+  const goToLogin = () =>
+    navigate("/login", {
+      state: {
+        from: `${location.pathname}?parcel=${encodeURIComponent(selectedParcel.parcelId)}`,
+      },
+    });
 
   return (
     <AnimatePresence>
@@ -31,7 +67,6 @@ export default function ParcelDetailsPanel() {
           transition={{ type: "spring", damping: 25 }}
           className="absolute top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl z-[500] overflow-y-auto"
         >
-          {/* Header */}
           <div className="sticky top-0 bg-gradient-to-br from-blue-600 to-emerald-600 text-white p-6">
             <button
               onClick={closePanel}
@@ -50,9 +85,22 @@ export default function ParcelDetailsPanel() {
               {selectedParcel.locality || "Dehradun Region"}
             </p>
           </div>
-
           <div className="p-6 space-y-6">
-            {/* Basic Info */}
+            {!user && (
+              <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-bold text-amber-900">Parcel found</p>
+                <p className="mt-1 text-xs text-amber-800">
+                  Sign in to view nearby facilities, environmental context, and
+                  land intelligence.
+                </p>
+                <button
+                  onClick={goToLogin}
+                  className="mt-3 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-bold text-white hover:bg-slate-700"
+                >
+                  Login to continue
+                </button>
+              </section>
+            )}
             <section>
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
                 Land Information
@@ -61,90 +109,87 @@ export default function ParcelDetailsPanel() {
                 <InfoRow
                   icon={MapPin}
                   label="Survey Number"
-                  value={selectedParcel.surveyNumber || "123/456"}
+                  value={selectedParcel.surveyNumber || "Unavailable"}
                 />
                 <InfoRow
                   icon={Ruler}
                   label="Area"
-                  value={`${selectedParcel.area || 1200} sq. meters`}
+                  value={`${selectedParcel.area || "Unavailable"} sq. meters`}
                 />
                 <InfoRow
                   icon={Building2}
                   label="Land Use"
-                  value={selectedParcel.landUse || "Residential"}
+                  value={selectedParcel.landUse || "Unavailable"}
                 />
                 <InfoRow
                   icon={Navigation}
                   label="Category"
-                  value={selectedParcel.category || "Private"}
+                  value={selectedParcel.category || "Unavailable"}
                 />
               </div>
             </section>
-
-            {/* Risk Assessment */}
-            <section>
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                Risk Assessment
-              </h3>
-              <div
-                className={`p-4 rounded-xl border-2 ${riskColors[selectedParcel.riskLevel] || riskColors.Medium}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5" />
-                    <span className="font-bold">Risk Level</span>
-                  </div>
-                  <span className="text-2xl font-black">
-                    {selectedParcel.riskLevel || "Medium"}
-                  </span>
-                </div>
-                <p className="text-xs opacity-80">
-                  {selectedParcel.riskFactors ||
-                    "Near water body, moderate flood risk"}
-                </p>
-              </div>
-            </section>
-
-            {/* Nearby Infrastructure */}
-            <section>
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                Nearby Infrastructure
-              </h3>
-              <div className="space-y-2">
-                {[
-                  { icon: "🛣️", label: "Highway", distance: "1.2 km" },
-                  { icon: "🏥", label: "Hospital", distance: "0.8 km" },
-                  { icon: "🎓", label: "School", distance: "1.5 km" },
-                  { icon: "💧", label: "Water Body", distance: "0.3 km" },
-                  { icon: "🚌", label: "Public Transport", distance: "0.4 km" },
-                ].map((item) => (
+            {user && (
+              <>
+                <section>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+                    Risk Assessment
+                  </h3>
                   <div
-                    key={item.label}
-                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                    className={`p-4 rounded-xl border-2 ${riskColors[selectedParcel.riskLevel] || riskColors.Medium}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{item.icon}</span>
-                      <span className="text-sm font-medium text-slate-700">
-                        {item.label}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5" />
+                        <span className="font-bold">Risk Level</span>
+                      </div>
+                      <span className="text-2xl font-black">
+                        {selectedParcel.riskLevel || "Unavailable"}
                       </span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-900">
-                      {item.distance}
-                    </span>
+                    <p className="text-xs opacity-80">
+                      {selectedParcel.riskFactors ||
+                        "Available dataset has no additional risk factors."}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Actions */}
-            <section className="space-y-2 pt-4 border-t border-slate-200">
-              <button className="w-full py-3 bg-gradient-to-r from-blue-600 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition">
-                View Full Analytics
-              </button>
-              <button className="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition">
-                Related Research
-              </button>
-            </section>
+                </section>
+                <section>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+                    Nearby Public Features
+                  </h3>
+                  <div className="space-y-2">
+                    {nearbyItems.map(([key, icon, label]) => {
+                      const item = nearby?.[key];
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">{icon}</span>
+                            <span className="text-sm font-medium text-slate-700">
+                              {label}
+                            </span>
+                          </div>
+                          <span className="text-sm font-semibold text-slate-900">
+                            {item
+                              ? `${item.distanceKm.toFixed(2)} km`
+                              : "Unavailable"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {nearby?.source && (
+                    <p className="mt-2 text-[11px] text-slate-500">
+                      Source: {nearby.source}
+                    </p>
+                  )}
+                  {nearbyError && (
+                    <p className="mt-2 text-xs text-amber-700">{nearbyError}</p>
+                  )}
+                </section>
+              </>
+            )}
           </div>
         </motion.div>
       )}

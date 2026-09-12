@@ -14,6 +14,7 @@ export function LandProvider({ children }) {
     water: true,
   });
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [mapTarget, setMapTarget] = useState(null);
 
   const toggleLayer = (layer) => {
     setActiveLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
@@ -23,6 +24,8 @@ export function LandProvider({ children }) {
     setSelectedParcel(parcel);
     setIsPanelOpen(true);
   };
+
+  const focusMap = (target) => setMapTarget(target);
 
   const closePanel = () => {
     setIsPanelOpen(false);
@@ -38,6 +41,8 @@ export function LandProvider({ children }) {
         toggleLayer,
         selectParcel,
         closePanel,
+        mapTarget,
+        focusMap,
       }}
     >
       {children}

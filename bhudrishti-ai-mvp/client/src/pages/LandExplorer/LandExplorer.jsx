@@ -1,13 +1,76 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import MapView from "../../components/map/MapView";
 import LayerControl from "../../components/map/LayerControl";
 import ParcelDetailsPanel from "../../components/map/ParcelDetailsPanel";
 import { useLand } from "../../context/LandContext";
 import { Search, MapPin, Layers } from "lucide-react";
+import { searchLand, searchLocation } from "../../api/landApi";
 
 export default function LandExplorer() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { selectedParcel } = useLand();
+  const [searchError, setSearchError] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const { selectedParcel, selectParcel, focusMap } = useLand();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const selectSearchResult = (parcel) => {
+    const normalized = {
+      ...parcel,
+      parcelId: parcel.parcel_id,
+      surveyNumber: parcel.survey_number,
+      landUse: parcel.land_use,
+      riskLevel: parcel.risk_level,
+      riskFactors: parcel.risk_factors,
+      geometry: parcel.geometry,
+    };
+    selectParcel(normalized);
+    focusMap({ geometry: parcel.geometry, zoom: 16 });
+  };
+
+  useEffect(() => {
+    const parcelId = new URLSearchParams(location.search).get("parcel");
+    if (!parcelId || selectedParcel?.parcelId === parcelId) return;
+    searchLand({ parcelId })
+      .then((response) => {
+        const parcel = response.data.data.results[0];
+        if (parcel) selectSearchResult(parcel);
+      })
+      .catch(() => setSearchError("Unable to restore the selected parcel."));
+  }, [location.search, selectedParcel?.parcelId]);
+
+  const submitSearch = async (event) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    setIsSearching(true);
+    setSearchError("");
+    try {
+      const parcelResponse = await searchLand({ q: query });
+      const parcel = parcelResponse.data.data.results[0];
+      if (parcel) {
+        selectSearchResult(parcel);
+        return;
+      }
+
+      const locationResponse = await searchLocation(query);
+      const location = locationResponse.data.data[0];
+      if (!location) throw new Error("No matching location found");
+      focusMap({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        zoom: 13,
+      });
+    } catch (error) {
+      setSearchError(
+        error.response?.data?.error || error.message || "Search failed",
+      );
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   return (
     <div className="pt-16 min-h-screen bg-slate-50">
@@ -32,7 +95,7 @@ export default function LandExplorer() {
             </div>
 
             {/* Search */}
-            <div className="relative w-full md:w-96">
+            <form onSubmit={submitSearch} className="relative w-full md:w-96">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
@@ -41,7 +104,20 @@ export default function LandExplorer() {
                 placeholder="Search parcel ID, locality..."
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
               />
-            </div>
+              <button type="submit" className="sr-only">
+                Search
+              </button>
+              {searchError && (
+                <p className="absolute top-full mt-2 text-xs font-medium text-red-600">
+                  {searchError}
+                </p>
+              )}
+              {isSearching && (
+                <p className="absolute top-full mt-2 text-xs font-medium text-slate-500">
+                  Looking up public map data...
+                </p>
+              )}
+            </form>
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import {
   login as loginRequest,
   register as registerRequest,
+  getCurrentUser,
 } from "../api/authApi";
 
 const AuthContext = createContext(null);
@@ -16,6 +17,9 @@ function readUser() {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(readUser);
+  const [isLoading, setIsLoading] = useState(() =>
+    Boolean(localStorage.getItem("bhudrishti_token")),
+  );
 
   const saveSession = ({ token, user: nextUser }) => {
     localStorage.setItem("bhudrishti_token", token);
@@ -39,8 +43,25 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  useEffect(() => {
+    if (!localStorage.getItem("bhudrishti_token")) {
+      setIsLoading(false);
+      return;
+    }
+    getCurrentUser()
+      .then(({ data }) => {
+        const nextUser = data.data?.user;
+        if (nextUser) {
+          localStorage.setItem("bhudrishti_user", JSON.stringify(nextUser));
+          setUser(nextUser);
+        }
+      })
+      .catch(logout)
+      .finally(() => setIsLoading(false));
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

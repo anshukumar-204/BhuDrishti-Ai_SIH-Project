@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   TrendingUp,
@@ -5,6 +6,7 @@ import {
   AlertTriangle,
   Database,
 } from "lucide-react";
+import apiClient from "../../api/apiClient";
 import {
   PieChart,
   Pie,
@@ -22,66 +24,81 @@ import {
 } from "recharts";
 
 export default function Analytics() {
+  const [summary, setSummary] = useState(null);
+  const [trends, setTrends] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    Promise.all([
+      apiClient.get("/analytics"),
+      apiClient.get("/analytics/trends/Dehradun"),
+    ])
+      .then(([summaryResponse, trendsResponse]) => {
+        setSummary(summaryResponse.data.data);
+        setTrends(trendsResponse.data.data?.trends || []);
+      })
+      .catch((requestError) => {
+        setError(
+          requestError.response?.data?.error || "Analytics data is unavailable",
+        );
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   const stats = [
     {
       label: "Total Parcels",
-      value: "5,247",
-      change: "+12%",
+      value: summary?.totalParcels ?? "—",
+      change: summary ? `Year ${summary.year}` : "",
       icon: Database,
       color: "from-blue-500 to-cyan-500",
     },
     {
       label: "Residential",
-      value: "2,312",
-      change: "+8%",
+      value: summary?.residential ?? "—",
+      change: summary ? "Current" : "",
       icon: TrendingUp,
       color: "from-emerald-500 to-teal-500",
     },
     {
       label: "Agricultural",
-      value: "1,580",
-      change: "-3%",
+      value: summary?.agricultural ?? "—",
+      change: summary ? "Current" : "",
       icon: PieIcon,
       color: "from-amber-500 to-orange-500",
     },
     {
       label: "High Risk",
-      value: "412",
-      change: "+5%",
+      value: summary?.highRisk ?? "—",
+      change: summary ? "Current" : "",
       icon: AlertTriangle,
       color: "from-red-500 to-pink-500",
     },
   ];
 
-  const landUseData = [
-    { name: "Residential", value: 2312, color: "#3B82F6" },
-    { name: "Agricultural", value: 1580, color: "#F59E0B" },
-    { name: "Forest", value: 845, color: "#10B981" },
-    { name: "Commercial", value: 320, color: "#8B5CF6" },
-    { name: "Government", value: 190, color: "#EC4899" },
-  ];
+  const landUseData = summary
+    ? [
+        { name: "Residential", value: summary.residential, color: "#3B82F6" },
+        { name: "Agricultural", value: summary.agricultural, color: "#F59E0B" },
+        { name: "Forest", value: summary.forest, color: "#10B981" },
+        { name: "Built-up", value: summary.builtup, color: "#8B5CF6" },
+      ]
+    : [];
 
-  const riskData = [
-    { region: "Zone A", low: 120, medium: 80, high: 30 },
-    { region: "Zone B", low: 90, medium: 110, high: 45 },
-    { region: "Zone C", low: 150, medium: 60, high: 20 },
-    { region: "Zone D", low: 80, medium: 95, high: 55 },
-    { region: "Zone E", low: 110, medium: 70, high: 35 },
-  ];
+  const riskData = summary
+    ? [
+        {
+          region: summary.region,
+          low: summary.lowRisk,
+          medium: summary.mediumRisk,
+          high: summary.highRisk,
+        },
+      ]
+    : [];
 
-  const categoryData = [
-    { name: "Private", value: 3670 },
-    { name: "Government", value: 1050 },
-    { name: "Public", value: 527 },
-  ];
-
-  const trendData = [
-    { year: "2019", residential: 1800, agricultural: 2100 },
-    { year: "2020", residential: 1950, agricultural: 2000 },
-    { year: "2021", residential: 2100, agricultural: 1850 },
-    { year: "2022", residential: 2200, agricultural: 1700 },
-    { year: "2023", residential: 2312, agricultural: 1580 },
-  ];
+  const categoryData = [];
+  const trendData = trends;
 
   return (
     <div className="pt-16 min-h-screen bg-slate-50">
@@ -104,6 +121,16 @@ export default function Analytics() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {loading && (
+          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+            Loading database-backed analytics...
+          </div>
+        )}
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+            {error}
+          </div>
+        )}
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((s, i) => {
@@ -208,29 +235,35 @@ export default function Analytics() {
               Ownership Category
             </h3>
             <p className="text-sm text-slate-500 mb-4">Private vs Government</p>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  dataKey="value"
-                  label
-                >
-                  <Cell fill="#3B82F6" />
-                  <Cell fill="#EF4444" />
-                  <Cell fill="#10B981" />
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {categoryData.length ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    dataKey="value"
+                    label
+                  >
+                    <Cell fill="#3B82F6" />
+                    <Cell fill="#EF4444" />
+                    <Cell fill="#10B981" />
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-[250px] items-center justify-center text-center text-sm text-slate-500">
+                Ownership breakdown is not available in the current dataset.
+              </div>
+            )}
           </div>
 
           {/* Trend */}
           <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200">
             <h3 className="text-lg font-bold text-slate-900 mb-1">
-              Land Use Trend (2019-2023)
+              Land Use Trend
             </h3>
             <p className="text-sm text-slate-500 mb-4">
               Urbanization pattern over 5 years

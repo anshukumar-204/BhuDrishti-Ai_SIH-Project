@@ -22,6 +22,19 @@ export async function findUserByEmail(email) {
   return result.rows[0] || null;
 }
 
+export async function findUserById(id) {
+  if (!pool) {
+    return (
+      [...developmentUsers.values()].find((user) => user.id === id) || null
+    );
+  }
+  const result = await pool.query(
+    "SELECT id, name, email, password_hash, role, organization FROM users WHERE id = $1",
+    [id],
+  );
+  return result.rows[0] || null;
+}
+
 export async function createUser({ name, email, passwordHash }) {
   if (!pool) {
     if (developmentUsers.has(email)) {

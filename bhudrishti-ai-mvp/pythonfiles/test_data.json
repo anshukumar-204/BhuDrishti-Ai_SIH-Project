@@ -1,0 +1,23 @@
+[
+  {
+    "land_id": "LAND_001",
+    "rainfall_mm": 180,
+    "slope_degree": 25,
+    "elevation_m": 700,
+    "vegetation_percent": 20
+  },
+  {
+    "land_id": "LAND_002",
+    "rainfall_mm": 60,
+    "slope_degree": 5,
+    "elevation_m": 300,
+    "vegetation_percent": 80
+  },
+  {
+    "land_id": "LAND_003",
+    "rainfall_mm": 120,
+    "slope_degree": 15,
+    "elevation_m": 500,
+    "vegetation_percent": 50
+  }
+]

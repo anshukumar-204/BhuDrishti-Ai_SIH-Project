@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Map,
@@ -15,12 +15,15 @@ import {
   ShieldCheck,
   LayoutDashboard,
   LogOut,
+  UserCircle,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const accountMenuRef = useRef(null);
   const location = useLocation();
   const { user, logout } = useAuth();
 
@@ -30,9 +33,24 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const closeAccountMenu = (event) => {
+      if (!accountMenuRef.current?.contains(event.target)) {
+        setIsAccountOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", closeAccountMenu);
+    return () => document.removeEventListener("mousedown", closeAccountMenu);
+  }, []);
+
   const navLinks = [
     { path: "/", label: "Home", icon: Home },
     { path: "/land-explorer", label: "Land Explorer", icon: Map },
+    {
+      path: "/land-intelligence",
+      label: "Land Intelligence",
+      icon: BrainCircuit,
+    },
     { path: "/research", label: "Research Hub", icon: BookOpen },
   ];
 
@@ -118,12 +136,44 @@ export default function Navbar() {
               </span>
             </button>
             {user ? (
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 text-slate-700 font-semibold text-sm hover:text-blue-600"
-              >
-                <LogOut className="w-4 h-4" /> Logout
-              </button>
+              <div className="relative" ref={accountMenuRef}>
+                <button
+                  onClick={() => setIsAccountOpen((open) => !open)}
+                  aria-label="Open account menu"
+                  aria-expanded={isAccountOpen}
+                  className="rounded-full p-1 text-slate-600 hover:bg-slate-100 hover:text-emerald-700"
+                >
+                  <UserCircle className="h-8 w-8" />
+                </button>
+                {isAccountOpen && (
+                  <div className="absolute right-0 top-11 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                    <div className="border-b border-slate-100 px-3 py-2">
+                      <p className="truncate text-sm font-bold text-slate-900">
+                        {user.name}
+                      </p>
+                      <p className="truncate text-xs text-slate-500">
+                        {user.email}
+                      </p>
+                    </div>
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="mt-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <UserCircle className="h-4 w-4" /> Profile
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsAccountOpen(false);
+                        logout();
+                      }}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" /> Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <Link
                 to="/login"
@@ -179,6 +229,15 @@ export default function Navbar() {
                 >
                   <LayoutDashboard className="w-5 h-5" /> Dashboard
                 </Link>
+                {user.role === "researcher" || user.role === "admin" ? (
+                  <Link
+                    to="/datasets"
+                    onClick={() => setIsMobileOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <BookOpen className="h-5 w-5" /> Datasets
+                  </Link>
+                ) : null}
               </>
             )}
           </div>

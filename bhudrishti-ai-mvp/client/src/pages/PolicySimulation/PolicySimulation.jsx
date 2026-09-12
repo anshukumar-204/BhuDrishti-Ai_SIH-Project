@@ -6,20 +6,40 @@ import {
   Leaf,
   Building2,
 } from "lucide-react";
+import { simulatePolicy } from "../../api/simulationApi";
 
 export default function PolicySimulation() {
   const [area, setArea] = useState(500);
   const [scenario, setScenario] = useState("Urban Development");
   const [result, setResult] = useState(null);
-  const simulate = (event) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const simulate = async (event) => {
     event.preventDefault();
-    const factor = area / 500;
-    setResult({
-      agricultural: Math.min(92, Math.round(42 * factor)),
-      environmental: Math.min(88, Math.round(28 * factor)),
-      infrastructure: Math.min(95, Math.round(36 * factor)),
-      potential: Math.min(99, Math.round(61 + factor * 8)),
-    });
+    setLoading(true);
+    setError("");
+    try {
+      const response = await simulatePolicy({
+        region: "Dehradun",
+        scenarioName: scenario,
+        areaHectares: area,
+      });
+      const values = response.data.data.results;
+      setResult({
+        agricultural: values.agriculturalImpact,
+        environmental: values.environmentalRisk,
+        infrastructure: values.infrastructurePressure,
+        potential: values.developmentPotential,
+        disclaimer: response.data.data.disclaimer,
+      });
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.error ||
+          "Simulation service is unavailable",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <div className="pt-16 min-h-screen bg-slate-50">
@@ -79,9 +99,15 @@ export default function PolicySimulation() {
             <SlidersHorizontal className="inline w-4 h-4 mr-2" /> Current land
             use: Agricultural
           </div>
-          <button className="mt-6 w-full rounded-xl bg-slate-950 py-4 font-bold text-white hover:bg-slate-800">
-            Simulate impact
+          <button
+            disabled={loading}
+            className="mt-6 w-full rounded-xl bg-slate-950 py-4 font-bold text-white hover:bg-slate-800 disabled:opacity-60"
+          >
+            {loading ? "Running model..." : "Simulate impact"}
           </button>
+          {error && (
+            <p className="mt-3 text-sm font-semibold text-red-600">{error}</p>
+          )}
         </form>
         <section className="bg-slate-950 text-white rounded-2xl p-6 min-h-[420px]">
           {!result ? (
@@ -154,8 +180,8 @@ export default function PolicySimulation() {
                 ))}
               </div>
               <p className="mt-8 text-xs text-slate-500">
-                Demo decision-support model. Outputs are indicative and require
-                expert validation before policy use.
+                {result.disclaimer ||
+                  "Outputs are indicative and require expert validation before policy use."}
               </p>
             </div>
           )}

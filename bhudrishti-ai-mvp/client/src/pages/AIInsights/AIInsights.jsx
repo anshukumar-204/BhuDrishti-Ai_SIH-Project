@@ -2,23 +2,34 @@ import { useState } from "react";
 import { Sparkles, CheckCircle2, ArrowRight, BrainCircuit } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLand } from "../../context/LandContext";
+import { generateInsight } from "../../api/aiApi";
 
 export default function AIInsights() {
   const { selectedParcel } = useLand();
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
+  const [insight, setInsight] = useState(null);
+  const [error, setError] = useState("");
   const parcel = selectedParcel || {
     parcelId: "UK-DDN-001",
     landUse: "Residential",
     riskLevel: "Low",
     locality: "Rajpur Road",
   };
-  const generate = () => {
+  const generate = async () => {
     setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
+    setError("");
+    try {
+      const response = await generateInsight(parcel);
+      setInsight(response.data.data);
       setGenerated(true);
-    }, 500);
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.error || "Unable to generate insight",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <div className="pt-16 min-h-screen bg-[#f4f7f5]">
@@ -66,6 +77,9 @@ export default function AIInsights() {
             >
               {loading ? "Synthesizing context..." : "Generate AI insight"}
             </button>
+            {error && (
+              <p className="mt-3 text-sm font-semibold text-red-600">{error}</p>
+            )}
           </section>
           <section className="bg-white rounded-2xl border border-slate-200 p-6 min-h-[360px]">
             {!generated ? (
@@ -89,27 +103,21 @@ export default function AIInsights() {
                   A balanced development context
                 </h2>
                 <p className="mt-4 text-lg leading-relaxed text-slate-700">
-                  {parcel.parcelId} sits in a {parcel.landUse?.toLowerCase()}{" "}
-                  context with {parcel.riskLevel?.toLowerCase()} mapped risk and
-                  strong nearby access. Prioritize infrastructure capacity and
-                  preserve environmental buffers as development decisions are
-                  evaluated.
+                  {insight?.insight?.summary ||
+                    "No summary was returned by the AI service."}
                 </p>
                 <div className="mt-6 grid md:grid-cols-2 gap-3">
-                  {[
-                    "Review local zoning policy",
-                    "Validate official records",
-                    "Compare nearby risk zones",
-                    "Document assumptions",
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      className="flex gap-2 items-center rounded-xl border border-slate-200 p-3 text-sm"
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      {item}
-                    </div>
-                  ))}
+                  {(insight?.insight?.recommendedNextSteps || []).map(
+                    (item) => (
+                      <div
+                        key={item}
+                        className="flex gap-2 items-center rounded-xl border border-slate-200 p-3 text-sm"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        {item}
+                      </div>
+                    ),
+                  )}
                 </div>
                 <Link
                   to="/analytics"
@@ -118,8 +126,8 @@ export default function AIInsights() {
                   Open supporting analytics <ArrowRight className="w-4 h-4" />
                 </Link>
                 <p className="mt-6 text-xs text-slate-500">
-                  Evidence used: parcel dataset, mapped risk layer,
-                  infrastructure context, and curated research resources.
+                  {insight?.disclaimer ||
+                    "Decision-support output based on available datasets."}
                 </p>
               </div>
             )}

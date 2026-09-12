@@ -1,12 +1,21 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-export default function ProtectedRoute() {
-  const { user } = useAuth();
+export default function ProtectedRoute({ roles }) {
+  const { user, isLoading } = useAuth();
   const location = useLocation();
-  return user ? (
-    <Outlet />
-  ) : (
-    <Navigate to="/login" replace state={{ from: location.pathname }} />
-  );
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center text-sm text-slate-500">
+        Checking your session...
+      </div>
+    );
+  }
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+  if (roles?.length && !roles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Outlet />;
 }

@@ -29,3 +29,7 @@ export function requireRole(...roles) {
     return next();
   };
 }
+
+export const requireResearcher = requireRole("researcher", "admin");
+export const requireGovernment = requireRole("government", "admin");
+export const requireAdmin = requireRole("admin");

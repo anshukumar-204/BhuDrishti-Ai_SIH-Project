@@ -7,7 +7,7 @@ export default function MapView() {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const layersRef = useRef({});
-  const { activeLayers, selectParcel } = useLand();
+  const { activeLayers, selectParcel, mapTarget } = useLand();
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
@@ -40,6 +40,37 @@ export default function MapView() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !mapTarget) return;
+
+    if (mapTarget.geometry) {
+      const selectedLayer = L.geoJSON(mapTarget.geometry, {
+        style: {
+          color: "#FBBF24",
+          weight: 4,
+          fillColor: "#FBBF24",
+          fillOpacity: 0.35,
+        },
+      }).addTo(map);
+      map.fitBounds(selectedLayer.getBounds(), {
+        padding: [30, 30],
+        maxZoom: mapTarget.zoom || 16,
+      });
+      return () => map.removeLayer(selectedLayer);
+    }
+
+    if (mapTarget.latitude && mapTarget.longitude) {
+      map.flyTo(
+        [mapTarget.latitude, mapTarget.longitude],
+        mapTarget.zoom || 13,
+        {
+          duration: 1.2,
+        },
+      );
+    }
+  }, [mapTarget]);
 
   const loadLayers = async (map) => {
     const layerConfigs = [

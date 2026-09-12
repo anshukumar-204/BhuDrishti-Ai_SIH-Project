@@ -1,8 +1,12 @@
 import "dotenv/config";
 import express from "express";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { createUser, findUserByEmail } from "../models/userModel.js";
+import {
+  createUser,
+  findUserByEmail,
+  findUserById,
+} from "../models/userModel.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -76,7 +80,7 @@ router.post("/login", async (req, res, next) => {
 
 router.get("/me", requireAuth, async (req, res, next) => {
   try {
-    const user = await findUserByEmail(req.user.email);
+    const user = await findUserById(req.user.sub);
     if (!user)
       return res.status(404).json({ success: false, error: "User not found" });
     return res.json({ success: true, data: { user: publicUser(user) } });

@@ -4,6 +4,53 @@ BhuDrishti AI is an AI-enabled land intelligence platform for exploring land par
 
 This repository contains the complete MVP: a React web client, an Express API, a small FastAPI AI service, GIS data-processing scripts, database schemas, and project documentation.
 
+## CIS-GPO Automator Reference
+
+The attached Smart India Hackathon 2024 presentation describes the related **CIS-GPO Automator for Air-Gapped Security** solution (Problem Statement ID: 1686, Team: Cannon Crew). Its purpose is to convert CIS security guidelines into customizable Group Policy Object (GPO) settings and PowerShell scripts that can be tested and deployed on offline or air-gapped Windows systems.
+
+### CIS-GPO automation flow
+
+```mermaid
+flowchart TD
+	A[Administrator uploads CIS guideline PDF] --> B[PDF ingestion and text extraction]
+	B --> C[Chunk and embed guideline content]
+	C --> D[(RAG vector database<br/>FAISS / ChromaDB)]
+
+	E[Administrator enters security requirement] --> F[Local LLM / Mistral via Ollama]
+	D --> F
+	F --> G[Retrieve relevant CIS controls]
+	G --> H[Generate customized PowerShell script]
+	H --> I[Review and approve script]
+	I --> J[Admin shell / script executor]
+	J --> K[Apply GPO settings on target Windows system]
+	K --> L[Run compliance and security tests]
+	L --> M{Passed?}
+	M -->|Yes| N[Save GPO, script, and audit documentation]
+	M -->|No| O[Show failed controls and recommended changes]
+	O --> E
+	N --> P[Export/import configuration for air-gapped deployment]
+```
+
+### PDF technology stack
+
+The presentation identifies the following technologies and components for the CIS-GPO Automator:
+
+| Area                           | Technology or component            | Role                                                                  |
+| ------------------------------ | ---------------------------------- | --------------------------------------------------------------------- |
+| Desktop application            | Electron.js                        | Offline desktop interface for administrators                          |
+| API and orchestration          | FastAPI                            | Local service layer for uploads, RAG, and automation workflows        |
+| Local AI runtime               | Ollama                             | Runs language models without sending sensitive data to the internet   |
+| Language model                 | Mistral AI                         | Generates PowerShell scripts from retrieved CIS controls              |
+| Retrieval-augmented generation | RAG                                | Grounds model output in the uploaded CIS guidelines                   |
+| Vector search                  | FAISS                              | Indexes and searches guideline embeddings locally                     |
+| Vector database                | ChromaDB / Chroma AI               | Stores document chunks and embedding metadata                         |
+| Policy automation              | PowerShell                         | Applies and validates Windows GPO/security settings                   |
+| Policy target                  | Windows Group Policy Objects (GPO) | Enforces the generated security configuration                         |
+| Data store                     | MongoDB                            | Stores guidelines, user settings, scripts, and documentation metadata |
+| Security model                 | Air-gapped/offline execution       | Supports sensitive environments without internet access               |
+
+The stack above comes from the attached presentation and represents the CIS-GPO Automator design. The current BhuDrishti MVP runtime uses the separate stack described below: React/Vite, Express, FastAPI, PostgreSQL/PostGIS schemas, and GeoJSON-based GIS data.
+
 ## What is implemented
 
 - Land Explorer with map layers and parcel data

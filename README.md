@@ -1,252 +1,339 @@
 # BhuDrishti AI
 
-BhuDrishti AI is an AI-enabled land intelligence platform for exploring land parcels, understanding risks and land use, testing policy scenarios, supporting verification, and bringing research data into one decision-support experience.
+BhuDrishti AI ek land-intelligence platform hai jo land parcels, land use, risk zones, climate risk, verification, analytics aur AI-based decision support provide karta hai.
 
-This repository contains the complete MVP: a React web client, an Express API, a small FastAPI AI service, GIS data-processing scripts, database schemas, and project documentation.
+> This is an MVP/demo project. Backend currently mock data use karta hai. Ye official government land-record system nahi hai.
 
-## What is implemented
+## Features
 
-- Land Explorer with map layers and parcel data
+- Land Explorer with interactive GIS layers
+- Parcel and land-use information
+- Risk and climate-risk analysis
 - Analytics dashboard
 - LandCheck workflow
-- AI Insights page and decision-support API
+- AI Insights
 - Policy Simulation
 - Verification workflow
 - Research Hub
-- Login, protected routes, user profile, and dashboard pages
-- GeoJSON layers for parcels, land use, risk zones, climate risk, forests, infrastructure, and water bodies
+- User login and protected routes
+- GeoJSON-based map layers
 
-The project is an MVP/demo. The Express API currently uses mock data, and PostgreSQL/PostGIS is the target persistence layer described by the SQL schemas. It is not an official legal land-record authority system.
+## Tech Stack
 
-## How the folders connect
+### Frontend
 
-```mermaid
-flowchart LR
-		User[User browser] --> Client[client/ React + Vite]
-		Client -->|/api requests| API[server/ Express API]
-		API --> Mock[server/src/data/mockData.js]
-		API -. planned persistence .-> DB[database/ SQL schemas]
-		Client -->|map layers| GIS[client/public/data/*.geojson]
-		Pipeline[data-pipeline/scripts] -->|processes source GIS data| GIS
-		Client -->|/api/ai/insight| API
-		AI[ai-service/ FastAPI] -. standalone service .-> API
-		Docs[docs/] -. explains .-> Client
-		Docs -. explains .-> API
-		Docs -. explains .-> AI
-```
+- React
+- Vite
+- React Router
+- Axios
+- JavaScript
+- GeoJSON map data
 
-### Request and data flow
+### Backend
 
-1. The user opens the React application from `client/` at `http://localhost:5173`.
-2. React pages and components use the modules in `client/src/api/` to call the backend.
-3. Vite proxies `/api` requests to the Express server at `http://localhost:5000`.
-4. Express mounts the route modules in `server/src/routes/`, applies authentication to protected groups, and returns the current mock data.
-5. The client loads map layers directly from `client/public/data/`. The scripts in `data-pipeline/` can process or prepare those GIS files.
-6. The frontend's current AI page calls the Express `/api/ai/insight` route. The separate FastAPI service in `ai-service/` provides its own `/health` and `/insights` endpoints and is ready to be integrated behind the backend.
-7. `database/` contains the schema for the future persistent users, parcels, and audit-log database. It is not connected to the current MVP runtime.
+- Node.js
+- Express.js
+- REST API
+- Mock data layer
+- Authentication middleware
 
-## Repository structure
+### AI Service
+
+- Python
+- FastAPI
+- Uvicorn
+- Pydantic
+
+### GIS and Database
+
+- GeoJSON
+- Python GIS processing scripts
+- PostgreSQL/PostGIS schema planned for future use
+
+## Project Structure
 
 ```text
 bhudrishti-ai-mvp/
-├── client/                         # React/Vite frontend
+├── client/                  # React + Vite frontend
 │   ├── src/
-│   │   ├── api/                    # Axios clients for backend services
-│   │   ├── components/             # Layout, map, analytics, and research UI
-│   │   ├── context/                # Auth and land state
-│   │   └── pages/                  # Application screens and routes
-│   ├── public/data/                # GeoJSON files used by map layers
+│   │   ├── api/             # API clients
+│   │   ├── components/      # Reusable UI components
+│   │   ├── context/         # Auth and shared state
+│   │   └── pages/           # Application pages
+│   ├── public/data/         # GeoJSON map layers
 │   └── package.json
-├── server/                         # Express backend API
-│   ├── src/routes/                 # Auth, land, analytics, research, AI, etc.
-│   ├── src/controllers/            # Request-handling logic
-│   ├── src/middleware/             # Authentication middleware
-│   ├── src/data/mockData.js        # Current demo data source
+│
+├── server/                  # Express backend
+│   ├── src/
+│   │   ├── routes/          # API routes
+│   │   ├── controllers/     # Request logic
+│   │   ├── middleware/      # Authentication middleware
+│   │   └── data/            # Mock data
 │   └── package.json
-├── ai-service/                     # FastAPI AI decision-support service
-│   ├── app/main.py                 # /health and /insights endpoints
+│
+├── ai-service/              # FastAPI service
+│   ├── app/main.py
 │   └── requirements.txt
-├── data-pipeline/                  # GIS processing utilities
-│   └── scripts/process_geojson.py
-├── database/                       # Planned persistence model
-│   ├── schema.sql
-│   └── schema/                     # Users, parcels, and audit logs
-├── docs/                           # Project overview, architecture, and demo docs
+│
+├── data-pipeline/           # GIS processing scripts
+├── database/                # SQL/PostGIS schemas
+├── docs/                    # Project documentation
 └── README.md
 ```
 
-## Frontend routes
+## Application Routes
 
-The route definitions are in `client/src/App.jsx`.
+| Route | Access | Description |
+|---|---|---|
+| `/` | Public | Home page |
+| `/land-explorer` | Public | Land and map exploration |
+| `/research` | Public | Research Hub |
+| `/login` | Public | Demo login |
+| `/analytics` | Protected | Analytics dashboard |
+| `/land-check` | Protected | LandCheck analysis |
+| `/ai-insights` | Protected | AI decision support |
+| `/policy-simulation` | Protected | Policy scenario testing |
+| `/verification` | Protected | Verification workflow |
+| `/dashboard` | Protected | User dashboard |
+| `/profile` | Protected | User profile |
 
-| Route                | Access    | Purpose                        |
-| -------------------- | --------- | ------------------------------ |
-| `/`                  | Public    | Home page                      |
-| `/land-explorer`     | Public    | Explore parcels and map layers |
-| `/research`          | Public    | Research Hub                   |
-| `/login`             | Public    | Sign in to the demo app        |
-| `/analytics`         | Protected | Analytics dashboard            |
-| `/land-check`        | Protected | LandCheck analysis             |
-| `/ai-insights`       | Protected | AI decision support            |
-| `/policy-simulation` | Protected | Policy scenario testing        |
-| `/verification`      | Protected | Verification workflow          |
-| `/dashboard`         | Protected | User dashboard                 |
-| `/profile`           | Protected | User profile                   |
+## API Endpoints
 
-## Backend API groups
+### Express API
 
-The Express application is configured in `server/src/app.js`.
+Base URL:
 
-- `/api/auth` - login and authentication
-- `/api/lands` - land and parcel data
-- `/api/analytics` - analytics data; protected
-- `/api/research` - research data
-- `/api/land-check` - land checks; protected
-- `/api/ai` - AI-related API operations; protected
-- `/api/simulation` - policy simulations; protected
-- `/api/verification` - verification operations; protected
-- `/api/health` - backend health check
+```text
+http://localhost:5000/api
+```
 
-The frontend uses `VITE_API_URL` when it is set. Otherwise it uses `http://localhost:5000/api`. The Vite development proxy means that the normal local setup does not require a frontend CORS configuration.
+| Endpoint | Description |
+|---|---|
+| `/auth` | Login and authentication |
+| `/lands` | Land and parcel data |
+| `/analytics` | Analytics data |
+| `/research` | Research data |
+| `/land-check` | LandCheck operations |
+| `/ai` | AI-related operations |
+| `/simulation` | Policy simulations |
+| `/verification` | Verification operations |
+| `/health` | Backend health check |
 
-## AI service API
+### FastAPI AI Service
 
-The FastAPI service runs separately on port `8000`.
+Base URL:
 
-- `GET /health` returns service status.
-- `POST /insights` accepts `parcel_id`, `land_use`, and `risk_level` and returns a decision-support summary. This service is currently standalone; the frontend reaches the Express AI route instead.
+```text
+http://localhost:8000
+```
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/health` | GET | Service health |
+| `/insights` | POST | Generate parcel insights |
 
 Example request:
 
-```bash
-curl -X POST http://localhost:8000/insights ^
-	-H "Content-Type: application/json" ^
-	-d "{\"parcel_id\":\"P-001\",\"land_use\":\"agricultural\",\"risk_level\":\"medium\"}"
+```json
+{
+  "parcel_id": "P-001",
+  "land_use": "agricultural",
+  "risk_level": "medium"
+}
 ```
 
-On macOS/Linux, replace `^` with `\` for line continuation, or run the command on one line.
+## Requirements
 
-## Prerequisites
+Install the following software:
 
+- Git
 - Node.js 18 or later
 - npm
 - Python 3.10 or later
 - pip
 
-## Run locally
+Check installation:
 
-Run each service in its own terminal from the repository root.
+```powershell
+git --version
+node --version
+npm --version
+python --version
+pip --version
+```
 
-### 1. Backend API
+## Start Project from GitHub
 
-```bash
+### 1. Clone Repository
+
+```powershell
+git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
+cd bhudrishti-ai-mvp
+```
+
+Replace `YOUR_USERNAME/YOUR_REPOSITORY` with the actual GitHub repository URL.
+
+### 2. Start Backend
+
+Open a new PowerShell terminal:
+
+```powershell
 cd server
 npm install
 npm run dev
 ```
 
-Available at `http://localhost:5000`.
+Backend will run at:
 
-### 2. Frontend
+```text
+http://localhost:5000
+```
 
-```bash
+### 3. Start Frontend
+
+Open another PowerShell terminal from the project root:
+
+```powershell
 cd client
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Frontend will run at:
 
-### 3. AI service
-
-```bash
-cd ai-service
-python -m venv .venv
+```text
+http://localhost:5173
 ```
 
-Windows PowerShell:
+### 4. Start AI Service
+
+Open another PowerShell terminal:
+
+```powershell
+cd ai-service
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+AI service will run at:
+
+```text
+http://localhost:8000
+```
+
+If PowerShell activation is blocked, run:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+Then activate the environment again:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-macOS/Linux:
+## Environment Configuration
 
-```bash
-source .venv/bin/activate
+Usually no environment file is required for local development.
+
+If the backend URL is different, create:
+
+```text
+client/.env
 ```
 
-Then install and start the service:
-
-```bash
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### 4. Optional GIS processing
-
-```bash
-cd data-pipeline
-python scripts/process_geojson.py
-```
-
-The processed files used by the frontend belong in `client/public/data/`.
-
-## Build and verify the frontend
-
-```bash
-cd client
-npm run build
-```
-
-Health checks:
-
-```bash
-curl http://localhost:5000/api/health
-curl http://localhost:8000/health
-```
-
-## Configuration
-
-Create `client/.env` only when the backend is not running at the default URL:
+Add:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Do not commit secrets or local environment files. The current demo authentication stores its token in browser local storage under `bhudrishti_token`.
+Do not commit passwords, tokens, API keys, `.env` files, or virtual environments to GitHub.
 
-## Where to make changes
+## Run GIS Processing
 
-- UI, pages, navigation, and map behavior: `client/src/`
-- Frontend API calls: `client/src/api/`
-- Auth and shared client state: `client/src/context/`
-- Express setup and middleware: `server/src/app.js` and `server/src/middleware/`
-- API endpoints: `server/src/routes/`
-- Backend request logic: `server/src/controllers/`
-- Demo data: `server/src/data/mockData.js`
-- AI behavior: `ai-service/app/main.py`
-- GIS preparation: `data-pipeline/scripts/`
-- Database design: `database/schema/`
-- Architecture and product documentation: `docs/`
+```powershell
+cd data-pipeline
+python scripts/process_geojson.py
+```
 
-## Related documentation
+Processed GeoJSON files should be placed in:
 
-- `docs/project/project-overview.md` - product and project context
-- `docs/architecture/system-architecture.md` - architecture notes
-- `docs/sih/demo-script.md` - demo flow
-- `data-pipeline/README.md` - GIS pipeline notes
-- `database/README.md` - database notes
+```text
+client/public/data/
+```
 
-## Current limitations
+## Build Frontend
 
-- Backend responses are mock/demo data.
-- The SQL schemas are not yet connected to the Express server.
-- The AI service is a lightweight decision-support stub, not a production model.
-- Authentication is intended for the MVP and should be replaced with production identity, token storage, validation, and authorization before deployment.
+```powershell
+cd client
+npm run build
+```
 
-## Project purpose
+Preview the production build:
 
-BhuDrishti AI brings land data, spatial layers, analytics, AI-assisted interpretation, verification, and policy simulation into one platform. It is intended to help teams explore evidence and evaluate decisions faster while keeping the MVP architecture easy to run and extend.
+```powershell
+npm run preview
+```
 
-- Authentication is intended for the MVP and should be replaced with production identity, token storage, validation, and authorization before deployment.
+## Health Checks
+
+Backend:
+
+```powershell
+curl http://localhost:5000/api/health
+```
+
+AI service:
+
+```powershell
+curl http://localhost:8000/health
+```
+
+## GitHub Commands
+
+Check changed files:
+
+```powershell
+git status
+```
+
+Add changes:
+
+```powershell
+git add .
+```
+
+Create commit:
+
+```powershell
+git commit -m "Update BhuDrishti AI project"
+```
+
+Push to GitHub:
+
+```powershell
+git push origin main
+```
+
+If the branch is named `master`:
+
+```powershell
+git push origin master
+```
+
+## Important Notes
+
+- Backend currently mock data use karta hai.
+- PostgreSQL/PostGIS schema future persistence ke liye prepared hai.
+- AI service abhi lightweight decision-support service hai.
+- Authentication demo purpose ke liye hai.
+- Production deployment se pehle proper database, authentication, validation, authorization, logging aur security add karni hogi.
+- `node_modules/`, `.venv/`, `.env` aur build files ko GitHub par commit na karein.
+
+## License
+
+This project is intended for educational, demonstration and MVP development purposes.

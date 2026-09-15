@@ -159,6 +159,18 @@ const initializeDatabase = async () => {
     `);
     console.log("✅ Research projects, saves, and notes tables created");
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS saved_parcels (
+        id SERIAL PRIMARY KEY,
+        user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        parcel_id INT NOT NULL REFERENCES land_parcels(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(user_id, parcel_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_saved_parcels_user ON saved_parcels(user_id);
+    `);
+    console.log("✅ Saved parcels table created");
+
     // Analytics Records table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS analytics_records (

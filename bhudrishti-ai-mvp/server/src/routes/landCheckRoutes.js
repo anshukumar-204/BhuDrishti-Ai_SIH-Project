@@ -20,7 +20,9 @@ router.get("/", async (req, res) => {
     const result = await pool.query(
       `SELECT id, parcel_id, survey_number, locality, ward_zone, land_use, category, 
               area, risk_level, risk_factors, environmental_risk, development_risk, 
-              data_source, last_updated
+              data_source, last_updated,
+              ST_Y(ST_Centroid(geometry)) AS latitude,
+              ST_X(ST_Centroid(geometry)) AS longitude
        FROM land_parcels
        WHERE parcel_id ILIKE $1 
           OR survey_number ILIKE $1 
@@ -85,6 +87,8 @@ router.get("/", async (req, res) => {
           development_risk: parcel.development_risk,
           data_source: parcel.data_source,
           last_updated: parcel.last_updated,
+          latitude: parcel.latitude ? Number(parcel.latitude) : null,
+          longitude: parcel.longitude ? Number(parcel.longitude) : null,
         },
         nearbyFeatures,
         relatedResearch: researchResult.rows,

@@ -7,3 +7,9 @@ export const generateInsight = (parcel) =>
     riskLevel: parcel.riskLevel || parcel.risk_level,
     area: parcel.area,
   });
+
+export const askAssistant = (question, parcel) =>
+  apiClient.post("/assistant", {
+    question,
+    parcelId: parcel?.parcelId || parcel?.parcel_id,
+  });

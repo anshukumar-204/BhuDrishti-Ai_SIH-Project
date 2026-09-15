@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useLand } from "../../context/LandContext";
 import { useAuth } from "../../context/AuthContext";
 import { getNearby } from "../../api/landApi";
+import { saveParcel } from "../../api/dashboardApi";
 import {
   X,
   MapPin,
@@ -10,6 +11,7 @@ import {
   AlertTriangle,
   Building2,
   Navigation,
+  Bookmark,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,12 +33,15 @@ export default function ParcelDetailsPanel() {
   const location = useLocation();
   const [nearby, setNearby] = useState(null);
   const [nearbyError, setNearbyError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const parcelKey = selectedParcel?.id || selectedParcel?.parcelId;
     if (!user || !parcelKey) return;
     setNearby(null);
     setNearbyError("");
+    setSaved(false);
     getNearby(parcelKey)
       .then(({ data }) => setNearby(data.data))
       .catch(() =>
@@ -130,6 +135,26 @@ export default function ParcelDetailsPanel() {
             </section>
             {user && (
               <>
+                <button
+                  onClick={async () => {
+                    setIsSaving(true);
+                    try {
+                      await saveParcel(selectedParcel.parcelId);
+                      setSaved(true);
+                    } finally {
+                      setIsSaving(false);
+                    }
+                  }}
+                  disabled={isSaving || saved}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 py-3 text-sm font-bold text-blue-700 disabled:opacity-60"
+                >
+                  <Bookmark className="h-4 w-4" />
+                  {saved
+                    ? "Saved to dashboard"
+                    : isSaving
+                      ? "Saving..."
+                      : "Save parcel"}
+                </button>
                 <section>
                   <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
                     Risk Assessment

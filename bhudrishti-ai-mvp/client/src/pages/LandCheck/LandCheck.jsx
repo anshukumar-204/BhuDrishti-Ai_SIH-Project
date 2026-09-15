@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLand } from "../../context/LandContext";
-import { checkLand } from "../../api/landCheckApi";
+import { checkLand, getNearbyFeatures } from "../../api/landCheckApi";
 
 const fallback = {
   parcelId: "UK-DDN-001",
@@ -21,12 +21,27 @@ const fallback = {
   riskFactors: "Standard residential zone",
 };
 
+const nearbyCategoryLabel = (category) =>
+  ({
+    hospital: "Hospitals",
+    school: "Schools",
+    bus_stop: "Bus stops",
+    market: "Markets",
+    railway: "Railway stations",
+    water: "Water bodies",
+    park: "Parks",
+    road: "Roads",
+  })[category] || "Other mapped features";
+
 export default function LandCheck() {
   const { selectedParcel } = useLand();
   const [query, setQuery] = useState(selectedParcel?.parcelId || "UK-DDN-001");
   const [report, setReport] = useState(selectedParcel || fallback);
   const [searched, setSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [nearby, setNearby] = useState(null);
+  const [isNearbyLoading, setIsNearbyLoading] = useState(false);
+  const [nearbyError, setNearbyError] = useState("");
   const [error, setError] = useState("");
   const runCheck = async (event) => {
     event.preventDefault();
@@ -36,7 +51,29 @@ export default function LandCheck() {
     setError("");
     try {
       const { data } = await checkLand(searchTerm);
-      setReport(data.data.parcel);
+      const parcel = data.data.parcel;
+      setReport(parcel);
+      setNearby(null);
+      setNearbyError("");
+      if (parcel.latitude != null && parcel.longitude != null) {
+        setIsNearbyLoading(true);
+        try {
+          const nearbyResponse = await getNearbyFeatures({
+            latitude: parcel.latitude,
+            longitude: parcel.longitude,
+          });
+          setNearby(nearbyResponse.data.data);
+        } catch (nearbyRequestError) {
+          setNearbyError(
+            nearbyRequestError.response?.data?.error ||
+              "Geospatial source temporarily unavailable.",
+          );
+        } finally {
+          setIsNearbyLoading(false);
+        }
+      } else {
+        setNearbyError("Parcel coordinates are unavailable for nearby search.");
+      }
     } catch (requestError) {
       setError(
         requestError.response?.data?.error ||
@@ -115,12 +152,28 @@ export default function LandCheck() {
             </div>
             <div className="mt-6 border-t border-slate-100 pt-6">
               <h3 className="font-bold text-slate-900">Nearby context</h3>
+              {isNearbyLoading && (
+                <p className="mt-3 text-sm text-slate-500">
+                  Fetching OpenStreetMap context...
+                </p>
+              )}
+              {nearbyError && (
+                <p className="mt-3 text-sm text-amber-700">{nearbyError}</p>
+              )}
               <div className="grid sm:grid-cols-3 gap-3 mt-3">
-                {[
-                  ["Road access", "1.2 km"],
-                  ["Hospital", "0.8 km"],
-                  ["Water body", "0.3 km"],
-                ].map(([label, value]) => (
+                {(nearby
+                  ? Object.entries(
+                      nearby.features.reduce((groups, feature) => {
+                        groups[feature.category] ||= [];
+                        groups[feature.category].push(feature);
+                        return groups;
+                      }, {}),
+                    ).map(([category, features]) => [
+                      nearbyCategoryLabel(category),
+                      `${features.length} within ${nearby.radiusKm} km`,
+                    ])
+                  : []
+                ).map(([label, value]) => (
                   <div
                     key={label}
                     className="p-3 border border-slate-200 rounded-lg"
@@ -130,6 +183,13 @@ export default function LandCheck() {
                   </div>
                 ))}
               </div>
+              {nearby && (
+                <p className="mt-4 text-xs text-slate-500">
+                  Source: OpenStreetMap via Overpass API · Retrieved{" "}
+                  {new Date(nearby.retrievedAt).toLocaleString()}
+                  {nearby.cached ? " · cached" : ""}
+                </p>
+              )}
             </div>
           </section>
           <aside className="space-y-4">

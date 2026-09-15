@@ -20,8 +20,10 @@ import {
   YAxis,
 } from "recharts";
 import { analyzeLand } from "../../api/landIntelligenceApi";
+import { searchLocation } from "../../api/landApi";
+import { parseCoordinates } from "../../utils/locationInput";
 
-const defaultCoordinates = { latitude: "30.3165", longitude: "78.0322" };
+const defaultQuery = "30.3165, 78.0322";
 
 function formatValue(value, suffix = "") {
   return value === null || value === undefined ? "--" : `${value}${suffix}`;
@@ -92,36 +94,41 @@ function TrendChart({ title, data, color, suffix }) {
 }
 
 export default function LandIntelligence() {
-  const [coordinates, setCoordinates] = useState(defaultCoordinates);
+  const [query, setQuery] = useState(defaultQuery);
   const [report, setReport] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const submit = async (event) => {
     event.preventDefault();
-    const latitude = Number(coordinates.latitude);
-    const longitude = Number(coordinates.longitude);
-    if (
-      !Number.isFinite(latitude) ||
-      latitude < -90 ||
-      latitude > 90 ||
-      !Number.isFinite(longitude) ||
-      longitude < -180 ||
-      longitude > 180
-    ) {
-      setError(
-        "Please enter valid latitude (-90 to 90) and longitude (-180 to 180).",
-      );
+    if (!query.trim()) {
+      setError("Enter coordinates or a location name to continue.");
       return;
     }
     setError("");
     setIsLoading(true);
     try {
-      const response = await analyzeLand(latitude, longitude);
+      let coordinates = parseCoordinates(query);
+      if (!coordinates) {
+        const locationResponse = await searchLocation(query.trim());
+        const place = locationResponse.data?.data?.[0];
+        if (!place) {
+          throw new Error("No location found for that search.");
+        }
+        coordinates = {
+          latitude: place.latitude,
+          longitude: place.longitude,
+        };
+      }
+      const response = await analyzeLand(
+        coordinates.latitude,
+        coordinates.longitude,
+      );
       setReport(response.data);
     } catch (requestError) {
       setError(
         requestError.response?.data?.error ||
+          requestError.message ||
           "Analysis service unavailable. Please start the AI service and try again.",
       );
     } finally {
@@ -144,43 +151,22 @@ export default function LandIntelligence() {
               Land Intelligence
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-emerald-50/80">
-              Enter coordinates to turn live weather and location signals into a
-              clear, decision-support report.
+              Paste coordinates or type a location to turn live environmental
+              signals into a clear, decision-support report.
             </p>
           </div>
           <form
             onSubmit={submit}
-            className="mt-8 grid gap-3 rounded-2xl bg-white/10 p-3 backdrop-blur sm:grid-cols-[1fr_1fr_auto]"
+            className="mt-8 grid gap-3 rounded-2xl bg-white/10 p-3 backdrop-blur sm:grid-cols-[1fr_auto]"
           >
             <label className="rounded-xl bg-white px-4 py-3 text-xs font-semibold text-slate-500">
-              Latitude
+              Coordinates or location
               <input
-                aria-label="Latitude"
-                type="number"
-                step="any"
-                value={coordinates.latitude}
-                onChange={(event) =>
-                  setCoordinates({
-                    ...coordinates,
-                    latitude: event.target.value,
-                  })
-                }
-                className="mt-1 block w-full bg-transparent text-base font-bold text-slate-900 outline-none"
-              />
-            </label>
-            <label className="rounded-xl bg-white px-4 py-3 text-xs font-semibold text-slate-500">
-              Longitude
-              <input
-                aria-label="Longitude"
-                type="number"
-                step="any"
-                value={coordinates.longitude}
-                onChange={(event) =>
-                  setCoordinates({
-                    ...coordinates,
-                    longitude: event.target.value,
-                  })
-                }
+                aria-label="Coordinates or location"
+                type="text"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="30.3165, 78.0322 or Dehradun"
                 className="mt-1 block w-full bg-transparent text-base font-bold text-slate-900 outline-none"
               />
             </label>

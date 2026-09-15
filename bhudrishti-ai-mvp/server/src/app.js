@@ -13,6 +13,9 @@ import authRoutes from "./routes/authRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import dataSourceRoutes from "./routes/dataSourceRoutes.js";
 import landIntelligenceRoutes from "./routes/landIntelligenceRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import assistantRoutes from "./routes/assistantRoutes.js";
+import geospatialRoutes from "./routes/geospatialRoutes.js";
 import { requireAuth, requireRole } from "./middleware/authMiddleware.js";
 import auditLogger from "./middleware/auditLogger.js";
 
@@ -56,6 +59,7 @@ app.use(
     "/api/verification",
     "/api/dashboard",
     "/api/profile",
+    "/api/geospatial",
   ],
   requireAuth,
 );
@@ -63,6 +67,7 @@ app.use(
 // Routes
 app.use("/api/lands", landRoutes);
 app.use("/api/land-intelligence", landIntelligenceRoutes);
+app.use("/api/geospatial", geospatialRoutes);
 app.get("/api/locations/search", async (req, res) => {
   const query = String(req.query.q || "").trim();
   if (!query) {
@@ -107,7 +112,9 @@ app.get("/api/locations/search", async (req, res) => {
   }
 });
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/research", researchRoutes);
+app.use("/api/assistant", assistantRoutes);
 app.use("/api/data-sources", dataSourceRoutes);
 app.use(
   "/api/projects",

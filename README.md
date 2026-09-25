@@ -167,7 +167,7 @@ pip --version
 ### 1. Clone Repository
 
 ```powershell
-git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
+git clone https://github.com/anshukumar-204/BhuDrishti-Ai_SIH-Project
 cd bhudrishti-ai-mvp
 ```
 

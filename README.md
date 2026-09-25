@@ -171,8 +171,6 @@ git clone https://github.com/anshukumar-204/BhuDrishti-Ai_SIH-Project
 cd bhudrishti-ai-mvp
 ```
 
-Replace `YOUR_USERNAME/YOUR_REPOSITORY` with the actual GitHub repository URL.
-
 ### 2. Start Backend
 
 Open a new PowerShell terminal:

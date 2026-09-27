@@ -1,12 +1,19 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LockKeyhole, Sparkles } from "lucide-react";
+import {
+  GraduationCap,
+  Landmark,
+  LockKeyhole,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 export default function Login() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("citizen");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, register } = useAuth();
@@ -17,8 +24,8 @@ export default function Login() {
     setError("");
     setIsSubmitting(true);
     const request = isRegistering
-      ? register({ name, email, password })
-      : login({ email, password });
+      ? register({ name, email, password, role })
+      : login({ email, password, role });
     request
       .then(() =>
         navigate(location.state?.from || "/dashboard", { replace: true }),
@@ -33,19 +40,70 @@ export default function Login() {
   };
   return (
     <div className="pt-16 min-h-screen bg-slate-950 flex items-center">
-      <div className="max-w-md w-full mx-auto px-4 py-12">
+      <div className="max-w-5xl w-full mx-auto px-4 py-12">
         <div className="text-center text-white">
           <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald-400 flex items-center justify-center">
             <Sparkles className="text-slate-950" />
           </div>
-          <h1 className="mt-5 text-3xl font-black">
-            {isRegistering ? "Create your workspace" : "Welcome back"}
-          </h1>
+          <h1 className="mt-5 text-3xl font-black">Welcome to BhuDrishti AI</h1>
           <p className="mt-2 text-slate-400">
-            Sign in to continue your land intelligence workspace.
+            Select your access type to continue.
           </p>
         </div>
-        <form onSubmit={submit} className="mt-8 bg-white rounded-2xl p-6">
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {[
+            {
+              value: "citizen",
+              label: "Citizen",
+              description: "Explore land and understand local context.",
+              icon: UserRound,
+            },
+            {
+              value: "researcher",
+              label: "Researcher",
+              description: "Connect research, datasets, and analysis.",
+              icon: GraduationCap,
+            },
+            {
+              value: "government",
+              label: "Government",
+              description: "Use policy analytics and decision support.",
+              icon: Landmark,
+            },
+          ].map((option) => {
+            const Icon = option.icon;
+            const selected = role === option.value;
+            return (
+              <button
+                type="button"
+                key={option.value}
+                onClick={() => setRole(option.value)}
+                className={`rounded-2xl border p-5 text-left transition ${
+                  selected
+                    ? "border-emerald-300 bg-emerald-400 text-slate-950 shadow-lg"
+                    : "border-slate-700 bg-slate-900 text-white hover:border-slate-500"
+                }`}
+              >
+                <Icon className="h-7 w-7" />
+                <p className="mt-5 text-lg font-black">{option.label}</p>
+                <p
+                  className={`mt-1 text-sm ${
+                    selected ? "text-slate-800" : "text-slate-400"
+                  }`}
+                >
+                  {option.description}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+        <form
+          onSubmit={submit}
+          className="mx-auto mt-6 max-w-md rounded-2xl bg-white p-6"
+        >
+          <p className="text-sm font-bold text-slate-900">
+            {isRegistering ? "Create your account" : "Sign in"} as {role}
+          </p>
           {isRegistering && (
             <label className="block text-sm font-bold">
               Name

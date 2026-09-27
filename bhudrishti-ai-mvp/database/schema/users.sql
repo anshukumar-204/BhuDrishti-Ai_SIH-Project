@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
 	name TEXT NOT NULL,
 	email TEXT UNIQUE NOT NULL,
 	password_hash TEXT NOT NULL,
-	role TEXT NOT NULL DEFAULT 'researcher' CHECK (role IN ('researcher', 'admin')),
+	role TEXT NOT NULL DEFAULT 'citizen' CHECK (role IN ('citizen', 'researcher', 'government', 'admin')),
 	organization TEXT,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

@@ -35,7 +35,7 @@ export async function findUserById(id) {
   return result.rows[0] || null;
 }
 
-export async function createUser({ name, email, passwordHash }) {
+export async function createUser({ name, email, passwordHash, role }) {
   if (!pool) {
     if (developmentUsers.has(email)) {
       const error = new Error("Email is already registered");
@@ -47,15 +47,29 @@ export async function createUser({ name, email, passwordHash }) {
       name,
       email,
       password_hash: passwordHash,
-      role: "researcher",
+      role,
       organization: null,
     };
     developmentUsers.set(email, user);
     return user;
   }
   const result = await pool.query(
-    "INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, 'researcher') RETURNING id, name, email, password_hash, role, organization",
-    [name, email, passwordHash],
+    "INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, password_hash, role, organization",
+    [name, email, passwordHash, role],
   );
   return result.rows[0];
+}
+
+export async function updateUserName(id, name) {
+  if (!pool) {
+    const user = [...developmentUsers.values()].find((item) => item.id === id);
+    if (!user) return null;
+    user.name = name;
+    return user;
+  }
+  const result = await pool.query(
+    "UPDATE users SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING id, name, email, password_hash, role, organization",
+    [name, id],
+  );
+  return result.rows[0] || null;
 }

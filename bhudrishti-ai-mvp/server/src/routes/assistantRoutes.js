@@ -31,7 +31,7 @@ function actionsFor(intent) {
   const actions = {
     PARCEL_INFO: [{ label: "Open Land Explorer", path: "/land-explorer" }],
     NEARBY_FEATURES: [{ label: "Open Land Explorer", path: "/land-explorer" }],
-    RESEARCH_SEARCH: [{ label: "Open Research Hub", path: "/research-hub" }],
+    RESEARCH_SEARCH: [{ label: "Open Research Hub", path: "/research" }],
     DATASET_SEARCH: [{ label: "Open Datasets", path: "/datasets" }],
     ANALYTICS_EXPLANATION: [{ label: "Open Analytics", path: "/analytics" }],
     POLICY_SIMULATION_GUIDE: [
@@ -93,10 +93,15 @@ router.post("/", async (req, res) => {
         .trim();
       const researchResult = await pool.query(
         `SELECT id, title, type, category, region, year, abstract, source_url, license
-         FROM research_resources
-         WHERE ($1 = '' OR title ILIKE $2 OR abstract ILIKE $2 OR key_findings ILIKE $2
-                OR region ILIKE $2 OR category ILIKE $2)
-         ORDER BY year DESC NULLS LAST
+          FROM (
+            SELECT DISTINCT ON (LOWER(title))
+              id, title, type, category, region, year, abstract, source_url, license
+            FROM research_resources
+            WHERE ($1 = '' OR title ILIKE $2 OR abstract ILIKE $2 OR key_findings ILIKE $2
+              OR region ILIKE $2 OR category ILIKE $2)
+            ORDER BY LOWER(title), year DESC NULLS LAST, id DESC
+          ) AS unique_resources
+          ORDER BY year DESC NULLS LAST
          LIMIT 5`,
         [search, `%${search}%`],
       );

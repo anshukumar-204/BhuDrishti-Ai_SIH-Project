@@ -6,6 +6,7 @@ import {
   createUser,
   findUserByEmail,
   findUserById,
+  updateUserName,
 } from "../models/userModel.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 
@@ -24,6 +25,7 @@ const createToken = (user) =>
   jwt.sign({ sub: user.id, role: user.role, email: user.email }, jwtSecret, {
     expiresIn: "7d",
   });
+const selectableRoles = ["citizen", "researcher", "government"];
 
 router.post("/register", async (req, res, next) => {
   try {
@@ -32,6 +34,9 @@ router.post("/register", async (req, res, next) => {
       .trim()
       .toLowerCase();
     const password = String(req.body?.password || "");
+    const role = String(req.body?.role || "citizen")
+      .trim()
+      .toLowerCase();
     if (!name || !email || password.length < 8) {
       return res.status(400).json({
         success: false,
@@ -39,10 +44,17 @@ router.post("/register", async (req, res, next) => {
           "Name, email, and a password of at least 8 characters are required",
       });
     }
+    if (!selectableRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        error: "Choose citizen, researcher, or government access",
+      });
+    }
     const user = await createUser({
       name,
       email,
       passwordHash: await bcrypt.hash(password, 12),
+      role,
     });
     return res.status(201).json({
       success: true,
@@ -63,12 +75,21 @@ router.post("/login", async (req, res, next) => {
       .trim()
       .toLowerCase();
     const password = String(req.body?.password || "");
+    const requestedRole = String(req.body?.role || "")
+      .trim()
+      .toLowerCase();
     const user = await findUserByEmail(email);
     const valid = user && (await bcrypt.compare(password, user.password_hash));
     if (!valid)
       return res
         .status(401)
         .json({ success: false, error: "Invalid email or password" });
+    if (requestedRole && requestedRole !== user.role && user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        error: `This account is registered as ${user.role}. Choose the matching access type.`,
+      });
+    }
     return res.json({
       success: true,
       data: { token: createToken(user), user: publicUser(user) },
@@ -81,6 +102,24 @@ router.post("/login", async (req, res, next) => {
 router.get("/me", requireAuth, async (req, res, next) => {
   try {
     const user = await findUserById(req.user.sub);
+    if (!user)
+      return res.status(404).json({ success: false, error: "User not found" });
+    return res.json({ success: true, data: { user: publicUser(user) } });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.patch("/me", requireAuth, async (req, res, next) => {
+  try {
+    const name = String(req.body?.name || "").trim();
+    if (name.length < 2 || name.length > 120) {
+      return res.status(400).json({
+        success: false,
+        error: "Name must be between 2 and 120 characters",
+      });
+    }
+    const user = await updateUserName(req.user.sub, name);
     if (!user)
       return res.status(404).json({ success: false, error: "User not found" });
     return res.json({ success: true, data: { user: publicUser(user) } });

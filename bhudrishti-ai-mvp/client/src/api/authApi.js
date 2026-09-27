@@ -4,3 +4,4 @@ export const login = (credentials) =>
 export const register = (credentials) =>
   apiClient.post("/auth/register", credentials);
 export const getCurrentUser = () => apiClient.get("/auth/me");
+export const updateProfile = (payload) => apiClient.patch("/auth/me", payload);

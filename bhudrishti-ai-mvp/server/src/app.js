@@ -123,7 +123,11 @@ app.use(
   projectRoutes,
 );
 app.use("/api/land-check", landCheckRoutes);
-app.use("/api/ai", requireRole("researcher", "government", "admin"), aiRoutes);
+app.use(
+  "/api/ai",
+  requireRole("citizen", "researcher", "government", "admin"),
+  aiRoutes,
+);
 app.use(
   "/api/simulation",
   requireRole("researcher", "government", "admin"),

@@ -16,20 +16,51 @@ import { createProject, getProjects } from "../../api/projectApi";
 export default function Dashboard() {
   const user = JSON.parse(
     localStorage.getItem("bhudrishti_user") ||
-      '{"name":"Researcher","role":"Researcher"}',
+      '{"name":"Citizen","role":"citizen"}',
   );
   const actions = [
-    ["Explore land", "Browse parcels and layers", "/land-explorer", Map],
-    ["Run LandCheck", "Create a context report", "/land-check", Search],
-    ["Generate insight", "Explain a selected area", "/ai-insights", Sparkles],
-    ["View analytics", "Compare land and risk data", "/analytics", BarChart3],
+    [
+      "Explore land",
+      "Browse parcels and layers",
+      "/land-explorer",
+      Map,
+      ["citizen", "researcher", "government", "admin"],
+    ],
+    [
+      "Run LandCheck",
+      "Create a context report",
+      "/land-check",
+      Search,
+      ["citizen", "researcher", "government", "admin"],
+    ],
+    [
+      "Generate insight",
+      "Explain a selected area",
+      "/ai-insights",
+      Sparkles,
+      ["citizen", "researcher", "government", "admin"],
+    ],
+    [
+      "View analytics",
+      "Compare land and risk data",
+      "/analytics",
+      BarChart3,
+      ["researcher", "government", "admin"],
+    ],
     [
       "Policy simulation",
       "Model policy outcomes",
       "/policy-simulation",
       FlaskConical,
+      ["researcher", "government", "admin"],
     ],
-    ["Verify document", "Fingerprint a file", "/verification", ShieldCheck],
+    [
+      "Verify document",
+      "Fingerprint a file",
+      "/verification",
+      ShieldCheck,
+      ["citizen", "researcher", "government", "admin"],
+    ],
   ];
   const [dashboard, setDashboard] = useState(null);
   const [nearby, setNearby] = useState(null);
@@ -121,7 +152,11 @@ export default function Dashboard() {
               Welcome back, {user.name}
             </h1>
             <p className="mt-2 text-slate-500">
-              Your land intelligence decision desk.
+              {user.role === "government"
+                ? "Your policy and decision-support desk."
+                : user.role === "researcher"
+                  ? "Your research and land intelligence workspace."
+                  : "Your personal land intelligence workspace."}
             </p>
           </div>
           <Link to="/profile" className="text-sm font-bold text-blue-600">
@@ -150,18 +185,20 @@ export default function Dashboard() {
 
         <h2 className="mt-10 text-xl font-black">Quick actions</h2>
         <div className="mt-4 grid md:grid-cols-2 lg:grid-cols-6 gap-4">
-          {actions.map(([title, desc, path, Icon]) => (
-            <Link
-              to={path}
-              key={title}
-              className="group rounded-2xl bg-white border border-slate-200 p-5 hover:-translate-y-1 hover:shadow-lg transition"
-            >
-              <Icon className="w-6 h-6 text-blue-600" />
-              <h3 className="mt-6 font-bold">{title}</h3>
-              <p className="mt-1 text-sm text-slate-500">{desc}</p>
-              <ArrowRight className="mt-5 w-4 h-4 text-slate-400 group-hover:text-blue-600" />
-            </Link>
-          ))}
+          {actions
+            .filter(([, , , , roles]) => roles.includes(user.role))
+            .map(([title, desc, path, Icon]) => (
+              <Link
+                to={path}
+                key={title}
+                className="group rounded-2xl bg-white border border-slate-200 p-5 hover:-translate-y-1 hover:shadow-lg transition"
+              >
+                <Icon className="w-6 h-6 text-blue-600" />
+                <h3 className="mt-6 font-bold">{title}</h3>
+                <p className="mt-1 text-sm text-slate-500">{desc}</p>
+                <ArrowRight className="mt-5 w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+              </Link>
+            ))}
         </div>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[1.1fr_.9fr]">

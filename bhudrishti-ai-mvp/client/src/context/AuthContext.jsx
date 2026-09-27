@@ -3,6 +3,7 @@ import {
   login as loginRequest,
   register as registerRequest,
   getCurrentUser,
+  updateProfile as updateProfileRequest,
 } from "../api/authApi";
 
 const AuthContext = createContext(null);
@@ -37,6 +38,14 @@ export function AuthProvider({ children }) {
     saveSession(data.data);
   };
 
+  const updateProfile = async (changes) => {
+    const { data } = await updateProfileRequest(changes);
+    const nextUser = data.data.user;
+    localStorage.setItem("bhudrishti_user", JSON.stringify(nextUser));
+    setUser(nextUser);
+    return nextUser;
+  };
+
   const logout = () => {
     localStorage.removeItem("bhudrishti_token");
     localStorage.removeItem("bhudrishti_user");
@@ -61,7 +70,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, register, updateProfile, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

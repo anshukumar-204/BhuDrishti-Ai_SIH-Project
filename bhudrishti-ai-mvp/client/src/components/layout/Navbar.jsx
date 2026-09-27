@@ -7,7 +7,6 @@ import {
   Home,
   Menu,
   X,
-  MoreHorizontal,
   Sparkles,
   Search,
   BrainCircuit,
@@ -16,6 +15,8 @@ import {
   LayoutDashboard,
   LogOut,
   UserCircle,
+  ChevronDown,
+  Database,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -23,7 +24,9 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null);
   const accountMenuRef = useRef(null);
+  const menuRef = useRef(null);
   const location = useLocation();
   const { user, logout } = useAuth();
 
@@ -34,14 +37,116 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const closeAccountMenu = (event) => {
+    const closeMenus = (event) => {
       if (!accountMenuRef.current?.contains(event.target)) {
         setIsAccountOpen(false);
       }
+      if (!menuRef.current?.contains(event.target)) {
+        setOpenMenu(null);
+      }
     };
-    document.addEventListener("mousedown", closeAccountMenu);
-    return () => document.removeEventListener("mousedown", closeAccountMenu);
+    document.addEventListener("mousedown", closeMenus);
+    return () => document.removeEventListener("mousedown", closeMenus);
   }, []);
+
+  const desktopNavLinks = [
+    { path: "/", label: "Home", icon: Home },
+    ...(!user
+      ? [{ path: "/land-explorer", label: "Land Explorer", icon: Map }]
+      : []),
+    {
+      path: "/land-intelligence",
+      label: "Land Intelligence",
+      icon: BrainCircuit,
+    },
+    { path: "/research", label: "Research Hub", icon: BookOpen },
+  ];
+
+  const desktopToolGroups = user
+    ? [
+        {
+          label: "Explore",
+          icon: Search,
+          items: [
+            {
+              path: "/land-explorer",
+              label: "Land Explorer",
+              description: "Explore parcels and GIS layers",
+              icon: Map,
+            },
+            ...(user
+              ? [
+                  {
+                    path: "/land-check",
+                    label: "LandCheck",
+                    description: "Check available land context",
+                    icon: Search,
+                    roles: ["citizen", "researcher", "government", "admin"],
+                  },
+                ]
+              : []),
+          ],
+        },
+        ...(user
+          ? [
+              {
+                label: "Intelligence",
+                icon: BrainCircuit,
+                items: [
+                  {
+                    path: "/ai-insights",
+                    label: "AI Insights",
+                    description: "Understand land data with AI",
+                    icon: BrainCircuit,
+                    roles: ["citizen", "researcher", "government", "admin"],
+                  },
+                  {
+                    path: "/analytics",
+                    label: "Analytics",
+                    description: "Discover trends and spatial insights",
+                    icon: BarChart3,
+                    roles: ["researcher", "government", "admin"],
+                  },
+                  {
+                    path: "/policy-simulation",
+                    label: "Policy Simulation",
+                    description: "Explore possible policy outcomes",
+                    icon: FlaskConical,
+                    roles: ["researcher", "government", "admin"],
+                  },
+                ],
+              },
+              {
+                label: "Workspace",
+                icon: LayoutDashboard,
+                items: [
+                  {
+                    path: "/dashboard",
+                    label: "Dashboard",
+                    description: "Overview and activity",
+                    icon: LayoutDashboard,
+                    roles: ["citizen", "researcher", "government", "admin"],
+                  },
+                  {
+                    path: "/verification",
+                    label: "Verification",
+                    description: "Verify document integrity",
+                    icon: ShieldCheck,
+                    roles: ["citizen", "researcher", "government", "admin"],
+                  },
+                  {
+                    path: "/datasets",
+                    label: "Datasets",
+                    description: "Explore land and geospatial datasets",
+                    icon: Database,
+                    roles: ["researcher", "admin"],
+                  },
+                ],
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   const navLinks = [
     { path: "/", label: "Home", icon: Home },
@@ -62,7 +167,16 @@ export default function Navbar() {
       ]
     : [];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) =>
+    path === "/"
+      ? location.pathname === "/"
+      : location.pathname.startsWith(path);
+  const isGroupActive = (items) => items.some((item) => isActive(item.path));
+
+  const visibleItems = (items) =>
+    items.filter(
+      (item) => !item.roles || (user && item.roles.includes(user.role)),
+    );
 
   return (
     <nav
@@ -90,9 +204,70 @@ export default function Navbar() {
           </Link>
 
           {/* Public navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => {
+          <div
+            className="hidden md:flex items-center gap-1 ml-10"
+            ref={menuRef}
+          >
+            {[...desktopNavLinks, ...desktopToolGroups].map((link) => {
               const Icon = link.icon;
+              if (link.items) {
+                const items = visibleItems(link.items);
+                const isOpen = openMenu === link.label;
+                return (
+                  <div className="relative" key={link.label}>
+                    <button
+                      type="button"
+                      onClick={() => setOpenMenu(isOpen ? null : link.label)}
+                      aria-expanded={isOpen}
+                      className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                        isGroupActive(items)
+                          ? "bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-md"
+                          : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {link.label}
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {isOpen && (
+                      <div className="absolute left-0 top-12 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                        <p className="px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                          {link.label === "Intelligence"
+                            ? "Land Intelligence"
+                            : link.label}
+                        </p>
+                        {items.map((item) => {
+                          const ItemIcon = item.icon;
+                          return (
+                            <Link
+                              key={item.label}
+                              to={item.path}
+                              onClick={() => setOpenMenu(null)}
+                              className={`flex items-start gap-3 rounded-lg px-3 py-3 transition-colors ${
+                                isActive(item.path)
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              <ItemIcon className="mt-0.5 h-5 w-5 shrink-0" />
+                              <span>
+                                <span className="block text-sm font-semibold">
+                                  {item.label}
+                                </span>
+                                <span className="mt-0.5 block text-xs text-slate-500">
+                                  {item.description}
+                                </span>
+                              </span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
               return (
                 <Link
                   key={link.path}
@@ -118,22 +293,13 @@ export default function Navbar() {
                 isMobileOpen ? "Close navigation menu" : "Open navigation menu"
               }
               aria-expanded={isMobileOpen}
-              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 md:hidden"
             >
-              <span className="hidden md:block">
-                {isMobileOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <MoreHorizontal className="w-6 h-6" />
-                )}
-              </span>
-              <span className="md:hidden">
-                {isMobileOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Menu className="w-6 h-6" />
-                )}
-              </span>
+              {isMobileOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </button>
             {user ? (
               <div className="relative" ref={accountMenuRef}>
@@ -161,6 +327,13 @@ export default function Navbar() {
                       className="mt-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                     >
                       <UserCircle className="h-4 w-4" /> Profile
+                    </Link>
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <LayoutDashboard className="h-4 w-4" /> My Workspace
                     </Link>
                     <button
                       onClick={() => {

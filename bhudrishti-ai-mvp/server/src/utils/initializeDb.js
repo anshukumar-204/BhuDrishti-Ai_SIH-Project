@@ -15,7 +15,7 @@ const initializeDatabase = async () => {
         name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'researcher' CHECK (role IN ('researcher', 'government', 'admin', 'public')),
+        role TEXT NOT NULL DEFAULT 'citizen' CHECK (role IN ('citizen', 'researcher', 'government', 'admin')),
         organization TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -25,8 +25,9 @@ const initializeDatabase = async () => {
     `);
     await pool.query(`
       ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+      UPDATE users SET role = 'citizen' WHERE role = 'public';
       ALTER TABLE users ADD CONSTRAINT users_role_check
-        CHECK (role IN ('researcher', 'government', 'admin', 'public'));
+        CHECK (role IN ('citizen', 'researcher', 'government', 'admin'));
     `);
     console.log("✅ Users table created");
 

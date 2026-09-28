@@ -1,7 +1,8 @@
 from statistics import mean
+from time import monotonic, sleep
 
 import requests
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
 app = FastAPI(title="BhuDrishti AI Service")
@@ -43,6 +44,9 @@ WEATHER_CODES = {
     96: "Thunderstorm with slight hail",
     99: "Thunderstorm with heavy hail",
 }
+
+WEATHER_CACHE_TTL_SECONDS = 600
+WEATHER_CACHE = {}
 
 
 def _average(values):
@@ -103,53 +107,89 @@ def _reverse_geocode(latitude, longitude):
         }
 
 
+def _fetch_weather(latitude, longitude):
+    cache_key = (round(latitude, 3), round(longitude, 3))
+    cached = WEATHER_CACHE.get(cache_key)
+    if cached and monotonic() - cached["created_at"] < WEATHER_CACHE_TTL_SECONDS:
+        return cached["data"]
+
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "hourly": "temperature_2m,relative_humidity_2m,precipitation,weather_code,soil_moisture_0_to_10cm",
+        "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code",
+        "timezone": "Asia/Kolkata",
+        "forecast_days": 1,
+    }
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "BhuDrishtiAI/1.0 (land-intelligence-demo)",
+    }
+
+    for attempt in range(2):
+        try:
+            response = requests.get(
+                "https://api.open-meteo.com/v1/forecast",
+                params=params,
+                headers=headers,
+                timeout=12,
+            )
+            if response.status_code == 429:
+                if cached:
+                    return cached["data"]
+                if attempt == 0:
+                    retry_after = response.headers.get("Retry-After", "2")
+                    try:
+                        sleep(min(float(retry_after), 3))
+                    except ValueError:
+                        sleep(2)
+                    continue
+                return None
+            response.raise_for_status()
+            data = response.json()
+            WEATHER_CACHE[cache_key] = {"created_at": monotonic(), "data": data}
+            return data
+        except requests.RequestException:
+            return cached["data"] if cached else None
+
+    return None
+
+
 @app.get("/land-analysis")
 def land_analysis(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
 ):
-    try:
-        response = requests.get(
-            "https://api.open-meteo.com/v1/forecast",
-            params={
-                "latitude": latitude,
-                "longitude": longitude,
-                "hourly": "temperature_2m,relative_humidity_2m,precipitation,weather_code,soil_moisture_0_to_10cm",
-                "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code",
-                "timezone": "Asia/Kolkata",
-                "forecast_days": 1,
-            },
-            timeout=12,
-        )
-        response.raise_for_status()
-        weather = response.json()
-        hourly = weather.get("hourly", {})
-        daily = weather.get("daily", {})
-        humidity_values = hourly.get("relative_humidity_2m", [])
-        soil_values = hourly.get("soil_moisture_0_to_10cm", [])
-        soil_moisture = round((soil_values[0] or 0) * 100, 1) if soil_values else None
-        weather_code = (daily.get("weather_code") or [None])[0]
-        location = _reverse_geocode(latitude, longitude)
-        return {
-            "success": True,
-            "coordinates": {"latitude": latitude, "longitude": longitude},
-            "location": location,
-            "environment": {
-                "max_temperature": (daily.get("temperature_2m_max") or [None])[0],
-                "min_temperature": (daily.get("temperature_2m_min") or [None])[0],
-                "precipitation": (daily.get("precipitation_sum") or [None])[0],
-                "humidity": (humidity_values[0] if humidity_values else None),
-                "average_humidity": _average(humidity_values),
-                "weather_code": weather_code,
-                "weather": WEATHER_CODES.get(weather_code, "Condition unavailable"),
-                "soil_moisture": soil_moisture,
-                "soil_status": _soil_status(soil_moisture) if soil_moisture is not None else "Unavailable",
-                "humidity_series": humidity_values,
-                "soil_moisture_series": [round(value * 100, 1) if value is not None else None for value in soil_values],
-                "time_series": hourly.get("time", []),
-            },
-            "sources": ["Open-Meteo", "OpenStreetMap Nominatim"],
-            "disclaimer": "Indicative environmental data for decision support, not a legal land record.",
-        }
-    except requests.RequestException as error:
-        raise HTTPException(status_code=502, detail=f"Environmental data service unavailable: {error}") from error
+    weather = _fetch_weather(latitude, longitude)
+    hourly = weather.get("hourly", {}) if weather else {}
+    daily = weather.get("daily", {}) if weather else {}
+    humidity_values = hourly.get("relative_humidity_2m", [])
+    soil_values = hourly.get("soil_moisture_0_to_10cm", [])
+    soil_moisture = round((soil_values[0] or 0) * 100, 1) if soil_values else None
+    weather_code = (daily.get("weather_code") or [None])[0]
+    location = _reverse_geocode(latitude, longitude)
+    return {
+        "success": True,
+        "coordinates": {"latitude": latitude, "longitude": longitude},
+        "location": location,
+        "environment": {
+            "max_temperature": (daily.get("temperature_2m_max") or [None])[0],
+            "min_temperature": (daily.get("temperature_2m_min") or [None])[0],
+            "precipitation": (daily.get("precipitation_sum") or [None])[0],
+            "humidity": (humidity_values[0] if humidity_values else None),
+            "average_humidity": _average(humidity_values),
+            "weather_code": weather_code,
+            "weather": WEATHER_CODES.get(weather_code, "Condition unavailable"),
+            "soil_moisture": soil_moisture,
+            "soil_status": _soil_status(soil_moisture) if soil_moisture is not None else "Unavailable",
+            "humidity_series": humidity_values,
+            "soil_moisture_series": [round(value * 100, 1) if value is not None else None for value in soil_values],
+            "time_series": hourly.get("time", []),
+        },
+        "sources": (["Open-Meteo"] if weather else []) + ["OpenStreetMap Nominatim"],
+        "disclaimer": (
+            "Indicative environmental data for decision support, not a legal land record."
+            if weather
+            else "Weather provider rate limit reached; location data is available, but environmental values are temporarily unavailable."
+        ),
+    }

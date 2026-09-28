@@ -144,15 +144,57 @@ def _fetch_weather(latitude, longitude):
                     except ValueError:
                         sleep(2)
                     continue
-                return None
+                return _fetch_wttr_weather(latitude, longitude)
             response.raise_for_status()
             data = response.json()
             WEATHER_CACHE[cache_key] = {"created_at": monotonic(), "data": data}
             return data
         except requests.RequestException:
-            return cached["data"] if cached else None
+            return cached["data"] if cached else _fetch_wttr_weather(latitude, longitude)
 
-    return None
+    return _fetch_wttr_weather(latitude, longitude)
+
+
+def _fetch_wttr_weather(latitude, longitude):
+    try:
+        response = requests.get(
+            f"https://wttr.in/{latitude:.5f},{longitude:.5f}",
+            params={"format": "j1"},
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "BhuDrishtiAI/1.0 (land-intelligence-demo)",
+            },
+            timeout=12,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        current = (payload.get("current_condition") or [{}])[0]
+        forecast = (payload.get("weather") or [{}])[0]
+        hourly = forecast.get("hourly") or []
+        date = forecast.get("date", "")
+        humidity_values = [float(item["humidity"]) for item in hourly if item.get("humidity")]
+        time_values = [
+            f"{date}T{int(item.get('time', 0)):04d}" for item in hourly if item.get("time") is not None
+        ]
+        description = ((current.get("weatherDesc") or [{}])[0]).get("value")
+        precipitation = float(forecast.get("totalPrecipMm", 0) or 0)
+        return {
+            "source": "wttr.in",
+            "weather_description": description or "Condition unavailable",
+            "hourly": {
+                "relative_humidity_2m": humidity_values,
+                "soil_moisture_0_to_10cm": [],
+                "time": time_values,
+            },
+            "daily": {
+                "temperature_2m_max": [float(forecast.get("maxtempC"))],
+                "temperature_2m_min": [float(forecast.get("mintempC"))],
+                "precipitation_sum": [precipitation],
+                "weather_code": [None],
+            },
+        }
+    except (requests.RequestException, ValueError, TypeError, KeyError):
+        return None
 
 
 @app.get("/land-analysis")
@@ -179,14 +221,17 @@ def land_analysis(
             "humidity": (humidity_values[0] if humidity_values else None),
             "average_humidity": _average(humidity_values),
             "weather_code": weather_code,
-            "weather": WEATHER_CODES.get(weather_code, "Condition unavailable"),
+            "weather": WEATHER_CODES.get(
+                weather_code,
+                weather.get("weather_description", "Condition unavailable") if weather else "Condition unavailable",
+            ),
             "soil_moisture": soil_moisture,
             "soil_status": _soil_status(soil_moisture) if soil_moisture is not None else "Unavailable",
             "humidity_series": humidity_values,
             "soil_moisture_series": [round(value * 100, 1) if value is not None else None for value in soil_values],
             "time_series": hourly.get("time", []),
         },
-        "sources": (["Open-Meteo"] if weather else []) + ["OpenStreetMap Nominatim"],
+        "sources": ([weather.get("source", "Open-Meteo")] if weather else []) + ["OpenStreetMap Nominatim"],
         "disclaimer": (
             "Indicative environmental data for decision support, not a legal land record."
             if weather

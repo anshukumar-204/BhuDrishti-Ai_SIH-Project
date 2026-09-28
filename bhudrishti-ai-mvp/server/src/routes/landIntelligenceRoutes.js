@@ -17,7 +17,15 @@ router.get("/analyze", async (req, res) => {
       .json({ success: false, error: "A valid longitude is required." });
   }
 
-  const serviceUrl = process.env.AI_SERVICE_URL || "http://localhost:8000";
+  const configuredServiceUrl = process.env.AI_SERVICE_URL?.trim();
+  if (!configuredServiceUrl && process.env.NODE_ENV === "production") {
+    return res.status(503).json({
+      success: false,
+      error: "AI service is not configured. Set AI_SERVICE_URL on the server.",
+    });
+  }
+
+  const serviceUrl = configuredServiceUrl || "http://localhost:8000";
   const url = new URL("/land-analysis", serviceUrl);
   url.search = new URLSearchParams({
     latitude: String(latitude),
@@ -25,7 +33,12 @@ router.get("/analyze", async (req, res) => {
   });
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    const timeoutMs = Number(process.env.AI_SERVICE_TIMEOUT_MS || 45000);
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(
+        Number.isFinite(timeoutMs) ? timeoutMs : 45000,
+      ),
+    });
     const payload = await response.json();
     if (!response.ok) {
       return res.status(response.status).json({

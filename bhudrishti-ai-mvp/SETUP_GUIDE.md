@@ -55,7 +55,7 @@ JWT_EXPIRE=7d
 
 # AI Service Configuration
 AI_SERVICE_URL=http://localhost:8000
-AI_API_KEY=your_ai_service_key
+AI_SERVICE_TIMEOUT_MS=45000
 
 # CORS Configuration
 CORS_ORIGIN=http://localhost:5173

@@ -114,7 +114,8 @@ The frontend uses `VITE_API_URL` when it is set. Otherwise it uses `http://local
 The FastAPI service runs separately on port `8000`.
 
 - `GET /health` returns service status.
-- `POST /insights` accepts `parcel_id`, `land_use`, and `risk_level` and returns a decision-support summary. This service is currently standalone; the frontend reaches the Express AI route instead.
+- `POST /insights` accepts `parcel_id`, `land_use`, and `risk_level` and returns a decision-support summary.
+- `GET /land-analysis` provides the environmental analysis used by the frontend through the Express `/api/land-intelligence/analyze` proxy.
 
 Example request:
 
@@ -125,6 +126,34 @@ curl -X POST http://localhost:8000/insights ^
 ```
 
 On macOS/Linux, replace `^` with `\` for line continuation, or run the command on one line.
+
+### Render deployment
+
+Create a separate Render **Web Service** for `ai-service`:
+
+- Root Directory: `ai-service`
+- Runtime: `Python 3`
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+After the AI service is deployed, copy its public HTTPS URL (for example,
+`https://bhudrishti-ai-service.onrender.com`) into the backend Render service as:
+
+```env
+AI_SERVICE_URL=https://bhudrishti-ai-service.onrender.com
+AI_SERVICE_TIMEOUT_MS=45000
+```
+
+Also set the backend's `CORS_ORIGIN` to the deployed client URL, then redeploy the
+backend. Verify the connection with:
+
+```text
+GET https://<ai-service>.onrender.com/health
+GET https://<server>.onrender.com/api/health
+```
+
+The land intelligence request is proxied through the backend at
+`/api/land-intelligence/analyze`; the browser should not call the Python service directly.
 
 ## Prerequisites
 
